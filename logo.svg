@@ -1,0 +1,8 @@
+<svg width="240" height="80" viewBox="0 0 240 80" xmlns="http://www.w3.org/2000/svg">
+  <rect width="240" height="80" rx="24" fill="#071b2d"/>
+  <circle cx="34" cy="40" r="18" fill="#ff8a3d"/>
+  <path d="M26 40h16" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+  <path d="M34 32v16" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+  <text x="66" y="34" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="700" fill="#ffffff" letter-spacing="1">SHIFT</text>
+  <text x="66" y="58" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="700" fill="#ff8a3d" letter-spacing="1">STAFFING</text>
+</svg>

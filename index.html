@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<script type="application/json" id="cowork-artifact-meta">
+{
+  "name": "Shift Staffing Dashboard",
+  "schemaVersion": 1
+}
+</script>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Business First 5 Shifts Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #FBF3E7;
+    --card: #ffffff;
+    --border: #e8dfcd;
+    --text: #262626;
+    --muted: #8a8272;
+    --accent: #3F7A4E;
+    --red: #d64545;
+    --red-bg: #fdecec;
+    --orange: #c76a1a;
+    --orange-bg: #fdf2e3;
+    --green: #3F7A4E;
+    --green-bg: #e8f3ea;
+    --green-dark: #24432B;
+    --blue: #3F7A4E;
+    --blue-bg: #e8f3ea;
+    --gray-bg: #f2ede0;
+    --cream-chip: #FBF3E7;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    padding: 24px 28px 60px;
+  }
+  header.page-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  h1 {
+    font-size: 22px;
+    margin: 0 0 4px;
+    font-weight: 700;
+  }
+  .subtitle {
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .snapshot-tag {
+    font-size: 12px;
+    color: var(--muted);
+    background: var(--gray-bg);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 6px 14px;
+    white-space: nowrap;
+  }
+  .kpi-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 26px;
+  }
+  .kpi-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 18px;
+  }
+  .kpi-label {
+    font-size: 12px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    margin-bottom: 6px;
+  }
+  .kpi-value {
+    font-size: 26px;
+    font-weight: 700;
+    line-height: 1.1;
+  }
+  .kpi-sub {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+  .kpi-card.danger .kpi-value { color: var(--red); }
+  .kpi-card.warn .kpi-value { color: var(--orange); }
+  .kpi-card.good .kpi-value { color: var(--green); }
+
+  .alert-banner {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    background: var(--orange-bg);
+    border: 1px solid #f0d3a8;
+    border-radius: 12px;
+    padding: 12px 18px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .alert-banner.show { display: flex; }
+  .alert-banner .msg {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13.5px;
+    color: var(--orange);
+    font-weight: 600;
+  }
+  .alert-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--orange);
+    box-shadow: 0 0 0 rgba(199,106,26,.5);
+    animation: pulse 1.8s infinite;
+    flex-shrink: 0;
+  }
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(199,106,26,.45); }
+    70% { box-shadow: 0 0 0 8px rgba(199,106,26,0); }
+    100% { box-shadow: 0 0 0 0 rgba(199,106,26,0); }
+  }
+  .alert-banner a.jump {
+    font-size: 12.5px;
+    color: var(--orange);
+    text-decoration: underline;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .kpi-card.flag {
+    border-color: #f0d3a8;
+  }
+  .kpi-card.flag .kpi-value { color: var(--orange); }
+  .badge-new {
+    display: inline-block;
+    background: var(--orange-bg);
+    color: var(--orange);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .02em;
+    padding: 1px 7px;
+    border-radius: 20px;
+    margin-left: 7px;
+    vertical-align: middle;
+  }
+  .urgent-badge {
+    display: inline-block;
+    background: var(--red-bg);
+    color: var(--red);
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 1px 8px;
+    border-radius: 20px;
+    margin-left: 6px;
+  }
+
+  details.panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px 22px;
+    margin-bottom: 22px;
+  }
+  summary.panel-summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    cursor: pointer;
+    list-style: none;
+  }
+  summary.panel-summary::-webkit-details-marker { display: none; }
+  summary.panel-summary::marker { content: ""; }
+  .toggle-btn {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--accent);
+    background: var(--green-bg);
+    border: 1px solid var(--border);
+    padding: 6px 14px;
+    border-radius: 20px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  summary.panel-summary:hover .toggle-btn {
+    border-color: var(--accent);
+  }
+  .chevron {
+    font-size: 12px;
+    color: var(--accent);
+    transition: transform 0.15s ease;
+    flex-shrink: 0;
+  }
+  details[open] > summary.panel-summary .chevron { transform: rotate(180deg); }
+  details.panel:not([open]) { padding-bottom: 20px; }
+  .panel-body {
+    margin-top: 14px;
+  }
+  .panel-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .panel-head h2, summary.panel-summary h2 {
+    font-size: 16px;
+    margin: 0;
+  }
+  .panel-desc {
+    font-size: 12.5px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  .search-box {
+    padding: 7px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 13px;
+    width: 240px;
+    background: #fff;
+  }
+  .filter-select {
+    padding: 7px 30px 7px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 13px;
+    background: #fff;
+    color: var(--text);
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%238a8272'><path d='M5.25 7.5l4.75 5 4.75-5z'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    background-size: 14px;
+  }
+  .filter-select:hover { border-color: var(--accent); }
+  .filter-bar {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1.3fr 1fr;
+    gap: 20px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  th, td {
+    text-align: left;
+    padding: 9px 10px;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  th {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+    color: var(--muted);
+    cursor: pointer;
+    user-select: none;
+    position: sticky;
+    top: 0;
+    background: var(--card);
+  }
+  th.sortable:hover { color: var(--text); }
+  th .arrow { font-size: 10px; margin-left: 3px; opacity: .5; }
+  tr:hover td { background: #fafbfc; }
+  .table-scroll {
+    max-height: 420px;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+  }
+  .badge {
+    display: inline-block;
+    padding: 2px 9px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .badge.CONFIRMED { background: var(--blue-bg); color: var(--blue); }
+  .badge.POSTED { background: var(--gray-bg); color: var(--muted); }
+  .badge.UNAPPROVED { background: var(--orange-bg); color: var(--orange); }
+  .badge.UNFILLED { background: var(--red-bg); color: var(--red); }
+  .num-red { color: var(--red); font-weight: 700; }
+  .num-green { color: var(--green); font-weight: 700; }
+  .num-zero { color: var(--muted); }
+  .chart-wrap { position: relative; height: 340px; }
+  .chart-wrap.small { height: 300px; }
+  footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 12px;
+    margin-top: 30px;
+  }
+  @media (max-width: 900px) {
+    .kpi-row { grid-template-columns: repeat(2, 1fr); }
+    .grid-2 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header class="page-head">
+  <div>
+    <h1>Business First 5 Shifts Dashboard</h1>
+    <div class="subtitle">New-business onboarding &amp; shift fill tracking &middot; built from the operations Google Sheet</div>
+  </div>
+  <div class="snapshot-tag" id="snapshotTag">Snapshot &middot; July 15, 2026</div>
+</header>
+
+<div class="alert-banner" id="unapprovedBanner">
+  <div class="msg"><span class="alert-dot"></span><span id="unapprovedBannerText">Loading unapproved shift check&hellip;</span></div>
+  <a class="jump" href="#unapprovedPanel">Review now &darr;</a>
+</div>
+
+<div class="kpi-row">
+  <div class="kpi-card danger">
+    <div class="kpi-label">New business unfilled shifts</div>
+    <div class="kpi-value" id="kpiUnfilled5">14</div>
+    <div class="kpi-sub" id="kpiUnfilled5Sub">15 requested &middot; 1 confirmed &middot; 5 new businesses</div>
+  </div>
+  <div class="kpi-card warn">
+    <div class="kpi-label">High-demand pro gap</div>
+    <div class="kpi-value" id="kpiHdGap">264</div>
+    <div class="kpi-sub" id="kpiHdGapSub">across shifts requesting &gt;10 pros</div>
+  </div>
+  <div class="kpi-card good">
+    <div class="kpi-label">Filled slots (full pipeline)</div>
+    <div class="kpi-value" id="kpiFilled">89</div>
+    <div class="kpi-sub" id="kpiFilledSub">across 94 business-day rows</div>
+  </div>
+  <div class="kpi-card flag">
+    <div class="kpi-label">&#9888; Pending approval</div>
+    <div class="kpi-value" id="kpiUnapproved">7</div>
+    <div class="kpi-sub" id="kpiUnapprovedSub">across 3 businesses</div>
+  </div>
+</div>
+
+<details class="panel" id="unapprovedPanel">
+  <summary class="panel-summary">
+    <div>
+      <h2>&#9888; Needs Approval</h2>
+      <div class="panel-desc">Shifts sitting in unapproved status. Anything tagged "Next 5 days" needs sign-off immediately.</div>
+    </div>
+    <span class="toggle-btn">
+      <span class="toggle-text">Show less</span>
+      <span class="chevron">&#9662;</span>
+    </span>
+  </summary>
+  <div class="panel-body">
+    <div class="table-scroll">
+      <table id="tblUnapproved">
+        <thead>
+          <tr>
+            <th data-key="0">Business</th>
+            <th data-key="1">Date</th>
+            <th data-key="2" style="text-align:right">Unapproved Count</th>
+            <th data-key="3">Manager</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</details>
+
+<details class="panel">
+  <summary class="panel-summary">
+    <div>
+      <h2>Action Required &mdash; New Business Shifts (First 5 Postings)</h2>
+      <div class="panel-desc">Each business's first 5 shift postings on the platform, still needing pros confirmed. A rough first experience here risks losing a new business early &mdash; treat these as top priority.</div>
+    </div>
+    <span class="toggle-btn">
+      <span class="toggle-text">Show less</span>
+      <span class="chevron">&#9662;</span>
+    </span>
+  </summary>
+  <div class="panel-body">
+    <div class="filter-bar" style="margin-bottom:14px;">
+      <select class="filter-select" id="tbl1ManagerFilter"><option value="">All Managers</option></select>
+      <select class="filter-select" id="tbl1StatusFilter"><option value="">All Statuses</option></select>
+    </div>
+    <div class="table-scroll">
+      <table id="tbl1">
+        <thead>
+          <tr>
+            <th data-key="0">Business</th>
+            <th data-key="1">Date</th>
+            <th data-key="2">Skill</th>
+            <th data-key="3" style="text-align:right">Req.</th>
+            <th data-key="4" style="text-align:right">Conf.</th>
+            <th data-key="5" style="text-align:right">Unfilled</th>
+            <th data-key="6">Status</th>
+            <th data-key="7">Auto Select</th>
+            <th data-key="8">Gig Type</th>
+            <th data-key="9">Manager</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</details>
+
+<details class="panel">
+  <summary class="panel-summary">
+    <div>
+      <h2>High-Demand Shifts (&gt;10 Pros Requested)</h2>
+      <div class="panel-desc">Large-headcount shifts. Red bars are understaffed (still need pros); green bars are overstaffed (more confirmed than requested).</div>
+    </div>
+    <span class="toggle-btn">
+      <span class="toggle-text">Show less</span>
+      <span class="chevron">&#9662;</span>
+    </span>
+  </summary>
+  <div class="panel-body">
+    <div class="filter-bar" style="margin-bottom:14px;">
+      <select class="filter-select" id="tbl2ManagerFilter"><option value="">All Managers</option></select>
+    </div>
+    <div class="grid-2">
+      <div class="table-scroll">
+        <table id="tbl2">
+          <thead>
+            <tr>
+              <th data-key="0">Business</th>
+              <th data-key="1">Date</th>
+              <th data-key="2">Skill</th>
+              <th data-key="3" style="text-align:right">Req.</th>
+              <th data-key="4" style="text-align:right">Conf.</th>
+              <th data-key="5" style="text-align:right">Gap</th>
+              <th data-key="6">Manager</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="chart-wrap small"><canvas id="hdChart"></canvas></div>
+    </div>
+  </div>
+</details>
+
+<details class="panel">
+  <summary class="panel-summary">
+    <div>
+      <h2>Full Shift Pipeline by Business &amp; Date</h2>
+      <div class="panel-desc">Every business/date row on the sheet, with fill status. Search, filter, or click a column header to sort.</div>
+    </div>
+    <span class="toggle-btn">
+      <span class="toggle-text">Show less</span>
+      <span class="chevron">&#9662;</span>
+    </span>
+  </summary>
+  <div class="panel-body">
+    <div class="filter-bar" style="margin-bottom:16px;">
+      <select class="filter-select" id="tbl3ViewFilter">
+        <option value="">All Rows</option>
+        <option value="unfilled">Unfilled Only</option>
+        <option value="unapproved">Unapproved Only</option>
+      </select>
+      <select class="filter-select" id="tbl3MonthFilter"><option value="">All Months</option></select>
+      <input class="search-box" id="searchBox" placeholder="Search business name...">
+    </div>
+    <div class="grid-2" style="margin-bottom:16px;">
+      <div class="chart-wrap small"><canvas id="topUnfilledChart"></canvas></div>
+      <div class="chart-wrap small"><canvas id="statusMixChart"></canvas></div>
+    </div>
+    <div class="table-scroll" style="max-height:480px;">
+      <table id="tbl3">
+        <thead>
+          <tr>
+            <th data-key="0">Date</th>
+            <th data-key="1">Business</th>
+            <th data-key="2" style="text-align:right">Unfilled</th>
+            <th data-key="3" style="text-align:right">Filled</th>
+            <th data-key="4" style="text-align:right">Unapproved</th>
+            <th data-key="5" style="text-align:right">Auto Select</th>
+            <th data-key="6" style="text-align:right">Private Offer</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</details>
+
+<footer>
+  Static snapshot &mdash; ask Claude to refresh this dashboard whenever the sheet updates.
+</footer>
+
+<script>
+const SEC1 = [["Fever - Candlelight @ El Paso Extra Space Storage", "2026-07-16 12:00:00", "Assistant Team Lead", "1", "0", "1", "CONFIRMED", "Auto Select Off", "PRIVATE_DIRECT_OFFER", "Christina Mora"], ["Fever - Candlelight @ El Paso Extra Space Storage", "2026-07-16 23:30:00", "Assistant Team Lead", "1", "0", "1", "CONFIRMED", "Auto Select Off", "PRIVATE_DIRECT_OFFER", "Christina Mora"], ["Fever - Candlelight @ Ritz Carlton Marina Del Rey", "2026-07-17 15:30:00", "Assistant Team Lead", "1", "0", "1", "POSTED", "Auto Select Off", "PRIVATE_DIRECT_OFFER", "Ash Lorona"], ["Most Holy Redeemer Church", "2026-07-18 11:30:00", "Event Help", "1", "0", "1", "UNAPPROVED", "Auto Select On", "MARKETPLACE", "Nicole Djojomartono"], ["Fever - SSI, An Idiot's Guide to Wine @ The Charleston", "2026-07-18 14:00:00", "Event Lead", "1", "0", "1", "POSTED", "Auto Select Off", "MARKETPLACE", "Samantha Phipps"], ["Fever - SSI, An Idiot's Guide to Wine @ The Charleston", "2026-07-18 15:30:00", "Beer & Wine Bartender", "2", "0", "2", "CONFIRMED", "Auto Select Off", "MARKETPLACE", "Samantha Phipps"], ["Fever - Candlelight @ The Celebrity Showroom", "2026-07-19 15:00:00", "Event Lead", "1", "0", "1", "CONFIRMED", "Auto Select Off", "MARKETPLACE", "Christina Mora"], ["Fever - Candlelight @ The Celebrity Showroom", "2026-07-19 15:00:00", "Assistant Team Lead", "1", "0", "1", "CONFIRMED", "Auto Select Off", "MARKETPLACE", "Christina Mora"], ["Fever - Candlelight @ The Celebrity Showroom", "2026-07-19 15:00:00", "Event Staff", "6", "1", "5", "UNFILLED", "Auto Select On", "MARKETPLACE", "Christina Mora"]];
+const SEC2 = [["Fever - DroneArt @ Suburu Field", "2026-07-16 13:00", "General Laborer", "12", "14", "-2", "Phil Czekner"], ["Fever - DroneArt @ Suburu Field", "2026-07-16 18:00", "Event Staff", "16", "20", "-4", "Phil Czekner"], ["Levy - Baird Convention Center", "2026-07-22 13:00", "Event Help", "100", "25", "75", "Caroline Roberts"], ["University of Michigan", "2026-07-24 12:00", "Event Help", "50", "38", "12", "Caroline Roberts"], ["Levy - Baird Convention Center", "2026-07-24 13:00", "Event Help", "100", "22", "78", "Caroline Roberts"], ["Aramark Facilities - Paycor Stadium", "2026-07-24 23:00", "General Cleaning", "25", "32", "-7", "Anthony Waite"], ["Stadium People - Forefront Field", "2026-07-25 12:00", "General Laborer", "40", "50", "-10", "Nick Sullivan"], ["University of Michigan", "2026-07-25 12:00", "Event Help", "50", "35", "15", "Caroline Roberts"], ["Levy - Baird Convention Center", "2026-07-25 13:00", "Event Help", "100", "28", "72", "Caroline Roberts"], ["Aramark Facilities - Paycor Stadium", "2026-07-25 23:00", "General Cleaning", "25", "32", "-7", "Anthony Waite"], ["Sanofi Pasteur", "2026-08-13 09:00", "Banquet Server", "12", "0", "12", "Veronica Amador"]];
+const SEC3 = [["2026-07-15", "Aramark - St Johnland Assisted Living", "0", "1", "0", "1", "0"], ["2026-07-15", "Eden Village Retirement Center - Morrison", "0", "0", "0", "1", "0"], ["2026-07-15", "Feeding Tampa Bay Causeway Center - Events", "0", "1", "0", "1", "1"], ["2026-07-15", "Fever - DroneArt @ Suburu Field", "0", "1", "0", "1", "0"], ["2026-07-15", "Toyota Financial Center - Infuse Hospitality", "0", "1", "0", "1", "0"], ["2026-07-16", "DW Presents Inkarceration Music Festival", "0", "1", "0", "1", "0"], ["2026-07-16", "Eatie's", "0", "1", "0", "1", "0"], ["2026-07-16", "Feeding Tampa Bay Causeway Center - Events", "0", "2", "0", "2", "2"], ["2026-07-16", "Fever - Candlelight @ El Paso Extra Space Storage", "0", "4", "0", "0", "4"], ["2026-07-16", "Fever - DroneArt @ Suburu Field", "0", "4", "0", "3", "0"], ["2026-07-16", "Toyota Financial Center - Infuse Hospitality", "0", "1", "0", "1", "0"], ["2026-07-17", "Fever - Candlelight @ Indianapolis Scotish Rite", "0", "2", "0", "0", "0"], ["2026-07-17", "Fever - Candlelight @ Ritz Carlton Marina Del Rey", "0", "1", "0", "0", "2"], ["2026-07-17", "IKEA New Haven", "0", "1", "0", "1", "0"], ["2026-07-17", "The Little Shop of Horticulture", "0", "1", "0", "1", "0"], ["2026-07-18", "Aramark - St Johnland Assisted Living", "0", "1", "0", "1", "0"], ["2026-07-18", "Feld Motorsports - MJAM S2 - Spectrum Center", "1", "0", "0", "1", "0"], ["2026-07-18", "Fever - SSI, An Idiot's Guide to Wine @ The Charleston", "0", "1", "0", "0", "0"], ["2026-07-18", "Most Holy Redeemer Church", "0", "0", "1", "1", "0"], ["2026-07-19", "Feld Motorsports - MJAM S2 - Spectrum Center", "0", "1", "0", "1", "0"], ["2026-07-19", "Fever - Candlelight @ The Celebrity Showroom", "1", "2", "0", "1", "0"], ["2026-07-19", "WM Events - Atlanta", "0", "2", "0", "2", "0"], ["2026-07-20", "Aleras Table", "0", "1", "0", "1", "0"], ["2026-07-21", "Feeding Tampa Bay Causeway Center - Events", "0", "1", "0", "1", "1"], ["2026-07-21", "IKEA New Haven", "0", "1", "0", "1", "0"], ["2026-07-22", "Feeding Tampa Bay Causeway Center - Events", "0", "0", "0", "1", "1"], ["2026-07-22", "IKEA New Haven", "0", "1", "0", "1", "0"], ["2026-07-22", "Levy - Baird Convention Center", "1", "0", "0", "1", "0"], ["2026-07-23", "IKEA New Haven", "0", "1", "0", "1", "0"], ["2026-07-23", "Ringling Bros. (RB-148) - Mortgage Matchup Center", "0", "1", "0", "1", "0"], ["2026-07-24", "Aramark Facilities - Paycor Stadium", "0", "1", "0", "1", "0"], ["2026-07-24", "Fever - Candlelight @ The Vibiana", "0", "1", "0", "0", "0"], ["2026-07-24", "Fever - SSI, An Idiot's Guide to Wine @ The Box MKE", "0", "2", "0", "0", "0"], ["2026-07-24", "Fever - SSI, An Idiot's Guide to Wine @ The Center at 2300", "0", "1", "0", "1", "0"], ["2026-07-24", "Fever - SSI, We Call It @ Jazz - The Cleveland Art Museum - Gartner Auditorium", "0", "3", "0", "0", "2"], ["2026-07-24", "IKEA New Haven", "0", "1", "0", "1", "0"], ["2026-07-24", "Levy - Baird Convention Center", "1", "0", "0", "1", "0"], ["2026-07-24", "Ringling Bros. (RB-148) - Mortgage Matchup Center", "0", "1", "0", "1", "0"], ["2026-07-24", "University of Michigan", "1", "0", "0", "1", "0"], ["2026-07-25", "Aramark Facilities - Paycor Stadium", "0", "1", "0", "1", "0"], ["2026-07-25", "Feld Motorsports - MJAM S2 - Pensacola Bay Center", "1", "0", "0", "1", "0"], ["2026-07-25", "Fever - Candlelight @ The Madison Center for the Arts", "1", "2", "0", "0", "2"], ["2026-07-25", "Fever - Candlelight @ Wealthy Theatre", "0", "0", "0", "0", "0"], ["2026-07-25", "Fever - Pilots @ The Palmer House - Honroe Room", "0", "0", "0", "0", "0"], ["2026-07-25", "Fever - SSI, An Idiot's Guide to Wine @ The Barrel Room", "0", "2", "0", "1", "1"], ["2026-07-25", "Fever - SSI, An Idiot's Guide to Wine @ The Chop Shop", "0", "2", "0", "0", "0"], ["2026-07-25", "Fever - SSI, We Call It @ Ballet - Hendrick's Live!", "0", "3", "0", "0", "0"], ["2026-07-25", "Fever - SSI, We Call It @ Jazz - Edison's", "0", "1", "0", "0", "0"], ["2026-07-25", "Levy - Baird Convention Center", "1", "0", "0", "1", "0"], ["2026-07-25", "Ringling Bros. (RB-148) - Mortgage Matchup Center", "0", "1", "0", "1", "0"], ["2026-07-25", "Stadium People - Forefront Field", "1", "0", "0", "1", "0"], ["2026-07-25", "University of Michigan", "1", "0", "0", "1", "0"], ["2026-07-26", "Feld Motorsports - MJAM S2 - Pensacola Bay Center", "1", "0", "0", "1", "0"], ["2026-07-26", "Ringling Bros. (RB-148) - Mortgage Matchup Center", "0", "1", "0", "1", "0"], ["2026-07-29", "Daisy's Fish Shack", "0", "3", "0", "3", "0"], ["2026-07-30", "Daisy's Fish Shack", "0", "2", "0", "2", "0"], ["2026-07-31", "Fever - SSI, The Jury Experience @ Nesholm Family Lecture Hall at McCaw Hall", "1", "2", "0", "0", "0"], ["2026-08-01", "CONESTEE PARK", "0", "1", "0", "1", "0"], ["2026-08-01", "Fever - SSI, An Idiot's Guide to Wine @ Palladian Arthouse", "0", "2", "0", "2", "0"], ["2026-08-01", "Joe farmer rec center", "0", "1", "0", "1", "0"], ["2026-08-07", "Fever - SSI, An Idiot's Guide to Wine @ The Local Drive", "0", "0", "0", "0", "0"], ["2026-08-08", "Fever - Candlelight @ African American Performing Arts Center", "0", "0", "0", "0", "2"], ["2026-08-08", "Verde at Cincinnati Open", "0", "2", "0", "0", "0"], ["2026-08-09", "Verde at Cincinnati Open", "0", "2", "0", "0", "0"], ["2026-08-10", "Verde at Cincinnati Open", "0", "1", "0", "0", "0"], ["2026-08-11", "Levy - Cincinnati Open", "1", "1", "0", "2", "0"], ["2026-08-12", "Levy - Cincinnati Open", "0", "0", "0", "0", "0"], ["2026-08-13", "Fever - Candlelight @ El Paso Extra Space Storage", "0", "0", "0", "0", "1"], ["2026-08-13", "Sanofi Pasteur", "0", "0", "0", "1", "0"], ["2026-08-14", "Fever - SSI, We Call It @ Lincoln Theatre - Jazz", "0", "0", "0", "0", "0"], ["2026-08-15", "LocoMotive Live-K-POP SUPERSTARS @ The Louisville Palace", "0", "1", "0", "1", "1"], ["2026-08-16", "Fever - Candlelight @ Howard Theater", "1", "0", "0", "0", "0"], ["2026-08-21", "Fever - SSI, An Idiot's Guide to Wine @ Walker Studios", "0", "0", "0", "0", "0"], ["2026-08-22", "Fever - SSI, An Idiot's Guide to Wine @ Palladian Arthouse", "0", "0", "0", "1", "0"], ["2026-08-28", "Fever - SSI, An Idiot's Guide to Wine @ The Charleston", "0", "0", "0", "0", "0"], ["2026-09-05", "Sensational Sips", "0", "0", "0", "2", "0"], ["2026-09-11", "LocoMotive Live-K-POP SUPERSTARS @ The Met", "0", "1", "0", "1", "0"], ["2026-09-18", "Fever - SSI, An Idiot's Guide to Wine @ The Center at 2300", "0", "0", "0", "1", "0"], ["2026-09-20", "Fever, SSI - The Jury Experience @ Roulette Theater", "0", "2", "0", "0", "3"], ["2026-09-25", "Fever - SSI, An Idiot's Guide to Wine @ The Local Drive", "0", "0", "0", "0", "0"], ["2026-10-02", "Fever - SSI, An Idiot's Guide to Wine @ Walker Studios", "0", "0", "0", "0", "0"], ["2026-10-04", "Fever, SSI - The Jury Experience @ Pollak Theater", "1", "2", "0", "0", "2"], ["2026-10-09", "Fever - Candlelight @ Clubhouse on South Temple", "0", "0", "0", "0", "0"], ["2026-10-10", "Fever - Candlelight @ Clubhouse on South Temple", "0", "0", "0", "0", "0"], ["2026-10-11", "Fever, SSI - The Jury Experience @ The Warehouse at FTC", "1", "1", "0", "2", "1"], ["2026-10-18", "Fever - SSI, The Jury Experience @ The Space Westbury", "1", "2", "0", "0", "2"], ["2026-10-30", "Fever - SSI, An Idiot's Guide to Wine @ The Center at 2300", "0", "0", "0", "0", "0"], ["2026-11-07", "Fever, SSI - The Jury Experience @ Pollak Theater", "0", "2", "0", "0", "2"], ["2026-11-15", "Fever, SSI - The Jury Experience @ The Warehouse at FTC", "0", "0", "0", "1", "2"], ["2026-12-05", "Fever, SSI - The Jury Experience @ Roulette Theater", "0", "1", "0", "0", "2"], ["2026-12-06", "Fever - SSI, The Jury Experience @ The Space Westbury", "0", "2", "0", "0", "2"], ["2026-12-19", "Palladio Banquet hall", "0", "0", "1", "1", "0"], ["2026-12-27", "LocoMotive Live - K-POP SUPERSTARS @ The Truth", "1", "0", "0", "1", "1"], ["2027-06-12", "Chao Club", "0", "0", "5", "5", "0"]];
+
+function fmtDate(s) {
+  const d = new Date(s.replace(' ', 'T'));
+  if (isNaN(d)) return s;
+  return d.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: (s.includes(':00:00') || s.split(':').length>1) ? 'numeric' : undefined, minute: (s.split(':').length>1) ? '2-digit' : undefined, hour12: true, year: d.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined });
+}
+
+// ---- Compute KPI cards dynamically from the data (so refreshing SEC1/SEC2/SEC3 alone keeps these accurate) ----
+(function computeKPIs() {
+  const totalReq = SEC1.reduce((s, r) => s + parseInt(r[3], 10), 0);
+  const totalConf = SEC1.reduce((s, r) => s + parseInt(r[4], 10), 0);
+  const totalUnfilled5 = SEC1.reduce((s, r) => s + parseInt(r[5], 10), 0);
+  const newBizCount = new Set(SEC1.map(r => r[0])).size;
+  document.getElementById('kpiUnfilled5').textContent = totalUnfilled5;
+  document.getElementById('kpiUnfilled5Sub').textContent =
+    `${totalReq} requested · ${totalConf} confirmed · ${newBizCount} new business${newBizCount !== 1 ? 'es' : ''}`;
+
+  const hdGap = SEC2.reduce((s, r) => { const g = parseInt(r[5], 10); return s + (g > 0 ? g : 0); }, 0);
+  document.getElementById('kpiHdGap').textContent = hdGap;
+
+  const totalFilled = SEC3.reduce((s, r) => s + parseInt(r[3], 10), 0);
+  document.getElementById('kpiFilled').textContent = totalFilled;
+  document.getElementById('kpiFilledSub').textContent = `across ${SEC3.length} business-day rows`;
+})();
+
+function renderTable(bodyId, data, colTypes, opts) {
+  opts = opts || {};
+  const tbody = document.querySelector(bodyId + ' tbody');
+  tbody.innerHTML = '';
+  data.forEach(row => {
+    const tr = document.createElement('tr');
+    row.forEach((cell, i) => {
+      const td = document.createElement('td');
+      const type = colTypes[i];
+      if (type === 'date') {
+        td.textContent = fmtDate(cell);
+      } else if (type === 'status') {
+        td.innerHTML = `<span class="badge ${cell}">${cell}</span>`;
+      } else if (type === 'num') {
+        td.style.textAlign = 'right';
+        const n = parseInt(cell, 10);
+        td.textContent = cell;
+        if (n > 0) td.classList.add('num-red');
+        else if (n < 0) td.classList.add('num-green');
+        else td.classList.add('num-zero');
+      } else {
+        td.textContent = cell;
+        if (opts.badgeCol === i) {
+          const badge = document.createElement('span');
+          badge.className = 'badge-new';
+          badge.textContent = opts.badgeLabel || 'NEW';
+          td.appendChild(badge);
+        }
+      }
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+}
+
+// ---- Needs Approval: derive from SEC3 (unapproved > 0), enrich with manager from SEC1 ----
+function daysUntil(dateStr) {
+  const d = new Date(dateStr.replace(' ', 'T'));
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  return Math.floor((d - now) / (1000 * 60 * 60 * 24));
+}
+const managerByBiz = {};
+SEC1.forEach(r => { managerByBiz[r[0]] = r[9]; });
+
+const unapprovedList = SEC3
+  .filter(r => parseInt(r[4], 10) > 0)
+  .map(r => [r[1], r[0], r[4], managerByBiz[r[1]] || '—', daysUntil(r[0])])
+  .sort((a, b) => a[4] - b[4]);
+
+function renderUnapproved() {
+  const tbody = document.querySelector('#tblUnapproved tbody');
+  tbody.innerHTML = '';
+  unapprovedList.forEach(row => {
+    const tr = document.createElement('tr');
+    const [biz, date, count, mgr, days] = row;
+    const urgent = days >= 0 && days <= 5;
+    tr.innerHTML = `
+      <td>${biz}</td>
+      <td>${fmtDate(date)}${urgent ? '<span class="urgent-badge">NEXT 5 DAYS</span>' : ''}</td>
+      <td style="text-align:right" class="num-red">${count}</td>
+      <td>${mgr}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+renderUnapproved();
+
+const bannerEl = document.getElementById('unapprovedBanner');
+const bannerText = document.getElementById('unapprovedBannerText');
+const kpiUnapprovedSub = document.getElementById('kpiUnapprovedSub');
+const totalUnapprovedCount = unapprovedList.reduce((s, r) => s + parseInt(r[2], 10), 0);
+document.getElementById('kpiUnapproved').textContent = totalUnapprovedCount;
+if (unapprovedList.length > 0) {
+  bannerEl.classList.add('show');
+  const totalCount = totalUnapprovedCount;
+  const urgentCount = unapprovedList.filter(r => r[4] >= 0 && r[4] <= 5).length;
+  bannerText.textContent = `${totalCount} unapproved shift${totalCount !== 1 ? 's' : ''} across ${unapprovedList.length} business${unapprovedList.length !== 1 ? 'es' : ''}` +
+    (urgentCount > 0 ? ` — ${urgentCount} due within 5 days` : '');
+  kpiUnapprovedSub.textContent = `across ${unapprovedList.length} business${unapprovedList.length !== 1 ? 'es' : ''}`;
+}
+
+function uniqueVals(arr, idx) {
+  return Array.from(new Set(arr.map(r => r[idx]))).sort();
+}
+function populateSelect(id, values) {
+  const sel = document.getElementById(id);
+  values.forEach(v => {
+    const opt = document.createElement('option');
+    opt.value = v; opt.textContent = v;
+    sel.appendChild(opt);
+  });
+}
+
+// ---- Table 1: Action Required (Manager / Status filters) ----
+const t1types = ['text','date','text','num','num','num','status','text','text','text'];
+const t1state = { data: SEC1.slice() };
+function applyTbl1Filters() {
+  const mgr = document.getElementById('tbl1ManagerFilter').value;
+  const status = document.getElementById('tbl1StatusFilter').value;
+  t1state.data = SEC1.filter(r => (!mgr || r[9] === mgr) && (!status || r[6] === status));
+  renderTable('#tbl1', t1state.data, t1types, { badgeCol: 0, badgeLabel: 'NEW BUSINESS' });
+}
+populateSelect('tbl1ManagerFilter', uniqueVals(SEC1, 9));
+populateSelect('tbl1StatusFilter', uniqueVals(SEC1, 6));
+document.getElementById('tbl1ManagerFilter').addEventListener('change', applyTbl1Filters);
+document.getElementById('tbl1StatusFilter').addEventListener('change', applyTbl1Filters);
+applyTbl1Filters();
+
+// ---- Table 2: High Demand (Manager filter) ----
+const t2types = ['text','date','text','num','num','num','text'];
+const t2state = { data: SEC2.slice() };
+function applyTbl2Filters() {
+  const mgr = document.getElementById('tbl2ManagerFilter').value;
+  t2state.data = SEC2.filter(r => !mgr || r[6] === mgr);
+  renderTable('#tbl2', t2state.data, t2types);
+}
+populateSelect('tbl2ManagerFilter', uniqueVals(SEC2, 6));
+document.getElementById('tbl2ManagerFilter').addEventListener('change', applyTbl2Filters);
+applyTbl2Filters();
+
+// ---- Table 3: Full pipeline (search + view + month filters) ----
+const t3types = ['date','text','num','num','num','num','num'];
+const t3state = { data: SEC3.slice() };
+function monthLabel(ym) {
+  const [y, m] = ym.split('-');
+  const d = new Date(parseInt(y,10), parseInt(m,10)-1, 1);
+  return d.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+}
+function applyTbl3Filters() {
+  const q = document.getElementById('searchBox').value.toLowerCase();
+  const view = document.getElementById('tbl3ViewFilter').value;
+  const month = document.getElementById('tbl3MonthFilter').value;
+  t3state.data = SEC3.filter(r => {
+    if (q && !r[1].toLowerCase().includes(q)) return false;
+    if (view === 'unfilled' && parseInt(r[2],10) <= 0) return false;
+    if (view === 'unapproved' && parseInt(r[4],10) <= 0) return false;
+    if (month && !r[0].startsWith(month)) return false;
+    return true;
+  });
+  renderTable('#tbl3', t3state.data, t3types);
+}
+const months = Array.from(new Set(SEC3.map(r => r[0].slice(0,7)))).sort();
+const monthSelect = document.getElementById('tbl3MonthFilter');
+months.forEach(m => {
+  const opt = document.createElement('option');
+  opt.value = m; opt.textContent = monthLabel(m);
+  monthSelect.appendChild(opt);
+});
+document.getElementById('searchBox').addEventListener('input', applyTbl3Filters);
+document.getElementById('tbl3ViewFilter').addEventListener('change', applyTbl3Filters);
+document.getElementById('tbl3MonthFilter').addEventListener('change', applyTbl3Filters);
+applyTbl3Filters();
+
+// generic sort-on-click-header (sorts state.data in place, keeping filters applied)
+function attachSort(tableId, state, types, rerender) {
+  const table = document.getElementById(tableId);
+  let sortState = {};
+  table.querySelectorAll('th').forEach(th => {
+    th.classList.add('sortable');
+    th.addEventListener('click', () => {
+      const key = parseInt(th.dataset.key, 10);
+      const asc = !(sortState[key] === 'asc');
+      sortState = { [key]: asc ? 'asc' : 'desc' };
+      const isNum = types[key] === 'num';
+      state.data.sort((a, b) => {
+        let va = a[key], vb = b[key];
+        if (isNum) { va = parseInt(va, 10); vb = parseInt(vb, 10); }
+        if (va < vb) return asc ? -1 : 1;
+        if (va > vb) return asc ? 1 : -1;
+        return 0;
+      });
+      rerender();
+    });
+  });
+}
+attachSort('tbl1', t1state, t1types, () => renderTable('#tbl1', t1state.data, t1types, { badgeCol: 0, badgeLabel: 'NEW BUSINESS' }));
+attachSort('tbl2', t2state, t2types, () => renderTable('#tbl2', t2state.data, t2types));
+attachSort('tbl3', t3state, t3types, () => renderTable('#tbl3', t3state.data, t3types));
+attachSort('tblUnapproved', { data: unapprovedList }, ['text','text','num','text'], renderUnapproved);
+
+// ---- Collapsible panels: keep the "Show more/less" label in sync with open state ----
+document.querySelectorAll('details.panel').forEach(panel => {
+  const label = panel.querySelector('.toggle-text');
+  if (!label) return;
+  const sync = () => { label.textContent = panel.open ? 'Show less' : 'Show more'; };
+  sync();
+  panel.addEventListener('toggle', sync);
+});
+
+// ---- Chart: High demand gap ----
+const hdSorted = SEC2.slice().sort((a,b) => parseInt(b[5],10) - parseInt(a[5],10));
+new Chart(document.getElementById('hdChart'), {
+  type: 'bar',
+  data: {
+    labels: hdSorted.map(r => r[0].length > 22 ? r[0].slice(0,22)+'…' : r[0]),
+    datasets: [{
+      label: 'Gap (unfilled pros)',
+      data: hdSorted.map(r => parseInt(r[5],10)),
+      backgroundColor: hdSorted.map(r => parseInt(r[5],10) > 0 ? '#d64545' : '#1f8a4c'),
+      borderRadius: 4,
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    indexAxis: 'y',
+    plugins: { legend: { display: false }, title: { display: true, text: 'Gap by business (positive = understaffed)', font: {size: 12} } },
+    scales: { x: { grid: { color: '#eee' } }, y: { grid: { display: false } } }
+  }
+});
+
+// ---- Chart: Top unfilled businesses (full pipeline) ----
+const unfilledByBiz = {};
+SEC3.forEach(r => {
+  const biz = r[1], u = parseInt(r[2],10);
+  unfilledByBiz[biz] = (unfilledByBiz[biz]||0) + u;
+});
+const topUnfilled = Object.entries(unfilledByBiz).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).slice(0,8);
+new Chart(document.getElementById('topUnfilledChart'), {
+  type: 'bar',
+  data: {
+    labels: topUnfilled.map(([b]) => b.length > 26 ? b.slice(0,26)+'…' : b),
+    datasets: [{
+      label: 'Total unfilled slots',
+      data: topUnfilled.map(([,v]) => v),
+      backgroundColor: '#d64545',
+      borderRadius: 4,
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    indexAxis: 'y',
+    plugins: { legend: { display: false }, title: { display: true, text: 'Top businesses by total unfilled slots', font: {size: 12} } },
+    scales: { x: { grid: { color: '#eee' }, ticks: { stepSize: 1 } }, y: { grid: { display: false } } }
+  }
+});
+
+// ---- Chart: status mix (filled / unfilled / unapproved) ----
+const totFilled = SEC3.reduce((s,r)=>s+parseInt(r[3],10),0);
+const totUnfilled = SEC3.reduce((s,r)=>s+parseInt(r[2],10),0);
+const totUnapproved = SEC3.reduce((s,r)=>s+parseInt(r[4],10),0);
+new Chart(document.getElementById('statusMixChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Filled', 'Unfilled', 'Pending approval'],
+    datasets: [{
+      data: [totFilled, totUnfilled, totUnapproved],
+      backgroundColor: ['#1f8a4c', '#d64545', '#c76a1a'],
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { position: 'bottom', labels: {font:{size:11}} }, title: { display: true, text: 'Slot status across full pipeline', font: {size: 12} } }
+  }
+});
+</script>
+</body>
+</html>
