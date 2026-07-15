@@ -23,15 +23,6 @@ HEADERS = {
               "Auto Select", "Private Offer"),
 }
 
-# Number of columns to keep per section, in output order (drops Ops Manager,
-# which the dashboard UI doesn't currently surface).
-KEEP_COLS = {
-    "SEC1": 10,  # drop trailing Ops Manager
-    "SEC2": 7,   # drop trailing Ops Manager
-    "SEC3": 7,   # unchanged
-}
-
-
 def fetch_rows():
     req = urllib.request.Request(CSV_URL, headers={"User-Agent": "Mozilla/5.0"})
     with urllib.request.urlopen(req, timeout=30) as resp:
@@ -59,7 +50,7 @@ def parse_sections(rows):
             current = matched
             continue
         if current:
-            sections[current].append(tr[: KEEP_COLS[current]])
+            sections[current].append(tr)
     return sections
 
 
