@@ -67,7 +67,7 @@
   }
   .kpi-row {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     gap: 14px;
     margin-bottom: 26px;
   }
@@ -393,6 +393,11 @@
     <div class="kpi-label">&#9888; Pending approval</div>
     <div class="kpi-value" id="kpiUnapproved">7</div>
     <div class="kpi-sub" id="kpiUnapprovedSub">across 3 businesses</div>
+  </div>
+  <div class="kpi-card flag">
+    <div class="kpi-label">&#9888; Pending outreach</div>
+    <div class="kpi-value" id="kpiPendingOutreach">0</div>
+    <div class="kpi-sub" id="kpiPendingOutreachSub">of 22 pros in the outreach queue</div>
   </div>
 </div>
 
@@ -981,6 +986,8 @@ function renderOutreachTable(data) {
   document.getElementById('kpiOutreachedSub').textContent =
     `${total ? Math.round(outreached / total * 100) : 0}% of queue has a note`;
   document.getElementById('kpiNotOutreached').textContent = notYet;
+  document.getElementById('kpiPendingOutreach').textContent = notYet;
+  document.getElementById('kpiPendingOutreachSub').textContent = `of ${total} pros in the outreach queue`;
   if (OUTREACH_AGENTS.length) {
     const [topName, topCount] = OUTREACH_AGENTS[0];
     document.getElementById('kpiTopAgent').textContent = topName;
