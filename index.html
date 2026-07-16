@@ -375,9 +375,9 @@
 
 <div class="kpi-row">
   <div class="kpi-card danger">
-    <div class="kpi-label">New business unfilled shifts</div>
+    <div class="kpi-label">Unfilled shifts &mdash; next 5 days</div>
     <div class="kpi-value" id="kpiUnfilled5">14</div>
-    <div class="kpi-sub" id="kpiUnfilled5Sub">15 requested &middot; 1 confirmed &middot; 5 new businesses</div>
+    <div class="kpi-sub" id="kpiUnfilled5Sub">15 requested &middot; 1 confirmed &middot; 5 businesses</div>
   </div>
   <div class="kpi-card warn">
     <div class="kpi-label">High-demand pro gap</div>
@@ -428,8 +428,8 @@
 <details class="panel">
   <summary class="panel-summary">
     <div>
-      <h2>Action Required &mdash; New Business Shifts (First 5 Postings)</h2>
-      <div class="panel-desc">Each business's first 5 shift postings on the platform, still needing pros confirmed. A rough first experience here risks losing a new business early &mdash; treat these as top priority.</div>
+      <h2>Action Required &mdash; Unfilled Shifts (Next 5 Days)</h2>
+      <div class="panel-desc">Shifts happening within the next 5 days that still need pros confirmed. Treat these as top priority to avoid last-minute scrambles.</div>
     </div>
     <span class="toggle-btn">
       <span class="toggle-text">Show less</span>
@@ -665,10 +665,10 @@ function fmtDate(s) {
   const totalReq = SEC1.reduce((s, r) => s + parseInt(r[3], 10), 0);
   const totalConf = SEC1.reduce((s, r) => s + parseInt(r[4], 10), 0);
   const totalUnfilled5 = SEC1.reduce((s, r) => s + parseInt(r[5], 10), 0);
-  const newBizCount = new Set(SEC1.map(r => r[0])).size;
+  const bizCount = new Set(SEC1.map(r => r[0])).size;
   document.getElementById('kpiUnfilled5').textContent = totalUnfilled5;
   document.getElementById('kpiUnfilled5Sub').textContent =
-    `${totalReq} requested · ${totalConf} confirmed · ${newBizCount} new business${newBizCount !== 1 ? 'es' : ''}`;
+    `${totalReq} requested · ${totalConf} confirmed · ${bizCount} business${bizCount !== 1 ? 'es' : ''}`;
 
   const hdGap = SEC2.reduce((s, r) => { const g = parseInt(r[5], 10); return s + (g > 0 ? g : 0); }, 0);
   document.getElementById('kpiHdGap').textContent = hdGap;
@@ -781,7 +781,7 @@ function applyTbl1Filters() {
   const opsMgr = document.getElementById('tbl1OpsManagerFilter').value;
   const status = document.getElementById('tbl1StatusFilter').value;
   t1state.data = SEC1.filter(r => (!mgr || r[9] === mgr) && (!opsMgr || r[10] === opsMgr) && (!status || r[6] === status));
-  renderTable('#tbl1', t1state.data, t1types, { badgeCol: 0, badgeLabel: 'NEW BUSINESS' });
+  renderTable('#tbl1', t1state.data, t1types);
 }
 populateSelect('tbl1ManagerFilter', uniqueVals(SEC1, 9));
 populateSelect('tbl1OpsManagerFilter', uniqueVals(SEC1, 10));
@@ -862,7 +862,7 @@ function attachSort(tableId, state, types, rerender) {
     });
   });
 }
-attachSort('tbl1', t1state, t1types, () => renderTable('#tbl1', t1state.data, t1types, { badgeCol: 0, badgeLabel: 'NEW BUSINESS' }));
+attachSort('tbl1', t1state, t1types, () => renderTable('#tbl1', t1state.data, t1types));
 attachSort('tbl2', t2state, t2types, () => renderTable('#tbl2', t2state.data, t2types));
 attachSort('tbl3', t3state, t3types, () => renderTable('#tbl3', t3state.data, t3types));
 attachSort('tblUnapproved', { data: unapprovedList }, ['text','text','num','text','text'], renderUnapproved);
