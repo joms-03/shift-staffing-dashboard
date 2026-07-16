@@ -387,9 +387,9 @@
     <div class="kpi-sub" id="kpiUnfilled5Sub">14 pros unfilled</div>
   </div>
   <div class="kpi-card warn">
-    <div class="kpi-label">Large-shift pro gap</div>
-    <div class="kpi-value" id="kpiHdGap">264</div>
-    <div class="kpi-sub" id="kpiHdGapSub">across shifts requesting &gt;10 pros</div>
+    <div class="kpi-label">Unfilled large shifts</div>
+    <div class="kpi-value" id="kpiHdGap">6</div>
+    <div class="kpi-sub" id="kpiHdGapSub">264 pros unfilled</div>
   </div>
   <div class="kpi-card good">
     <div class="kpi-label">Filled slots (full pipeline)</div>
@@ -692,7 +692,9 @@ function fmtDate(s) {
   const unfilledShiftCount5 = SEC1.filter(r => parseInt(r[5], 10) > 0).length;
 
   const hdGap = SEC2.reduce((s, r) => { const g = parseInt(r[5], 10); return s + (g > 0 ? g : 0); }, 0);
-  document.getElementById('kpiHdGap').textContent = hdGap;
+  const unfilledLargeShiftCount = SEC2.filter(r => parseInt(r[5], 10) > 0).length;
+  document.getElementById('kpiHdGap').textContent = unfilledLargeShiftCount;
+  document.getElementById('kpiHdGapSub').textContent = `${hdGap} pros unfilled`;
 
   document.getElementById('kpiUnfilled5').textContent = unfilledShiftCount5;
   document.getElementById('kpiUnfilled5Sub').textContent = `${totalUnfilled5} pros unfilled`;
