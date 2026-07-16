@@ -141,10 +141,12 @@ def main():
             raise SystemExit(f"Could not find {key} array literal in {index_path}")
         html = new_html
 
-    snapshot = datetime.now(timezone.utc).strftime("%B %-d, %Y %H:%M UTC")
+    snapshot_dt = datetime.now(timezone.utc)
+    snapshot_iso = snapshot_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+    snapshot = snapshot_dt.strftime("%B %-d, %Y %H:%M UTC")
     html = re.sub(
-        r'(<div class="snapshot-tag" id="snapshotTag">Snapshot &middot; )[^<]*(</div>)',
-        rf"\1{snapshot}\2",
+        r'<div class="snapshot-tag" id="snapshotTag"[^>]*>[^<]*</div>',
+        f'<div class="snapshot-tag" id="snapshotTag" data-snapshot-utc="{snapshot_iso}">Snapshot &middot; {snapshot}</div>',
         html,
         count=1,
     )

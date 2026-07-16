@@ -365,7 +365,7 @@
     <h1>Business First 5 Shifts Dashboard</h1>
     <div class="subtitle">New-business onboarding &amp; shift fill tracking &middot; built from the operations Google Sheet</div>
   </div>
-  <div class="snapshot-tag" id="snapshotTag">Snapshot &middot; July 16, 2026 15:19 UTC</div>
+  <div class="snapshot-tag" id="snapshotTag" data-snapshot-utc="2026-07-16T15:19:00Z">Snapshot &middot; July 16, 2026 15:19 UTC</div>
 </header>
 
 <div class="alert-banner" id="unapprovedBanner">
@@ -664,6 +664,20 @@ function fmtDate(s) {
   if (isNaN(d)) return s;
   return d.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: (s.includes(':00:00') || s.split(':').length>1) ? 'numeric' : undefined, minute: (s.split(':').length>1) ? '2-digit' : undefined, hour12: true, year: d.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined });
 }
+
+// ---- Show the snapshot time in the viewer's own local timezone, not the fixed UTC it was refreshed in ----
+(function localizeSnapshot() {
+  const el = document.getElementById('snapshotTag');
+  const iso = el && el.dataset.snapshotUtc;
+  if (!iso) return;
+  const d = new Date(iso);
+  if (isNaN(d)) return;
+  const formatted = d.toLocaleString('en-US', {
+    month: 'short', day: 'numeric', year: 'numeric',
+    hour: 'numeric', minute: '2-digit', timeZoneName: 'short'
+  });
+  el.textContent = `Snapshot · ${formatted}`;
+})();
 
 // ---- Compute KPI cards dynamically from the data (so refreshing SEC1/SEC2/SEC3 alone keeps these accurate) ----
 (function computeKPIs() {
