@@ -382,9 +382,9 @@
 
 <div class="kpi-row">
   <div class="kpi-card danger">
-    <div class="kpi-label">Total unfilled shifts</div>
-    <div class="kpi-value" id="kpiUnfilled5">14</div>
-    <div class="kpi-sub" id="kpiUnfilled5Sub">14 next 5 days &middot; 264 large shifts</div>
+    <div class="kpi-label">Unfilled shifts &mdash; next 5 days</div>
+    <div class="kpi-value" id="kpiUnfilled5">9</div>
+    <div class="kpi-sub" id="kpiUnfilled5Sub">14 pros unfilled</div>
   </div>
   <div class="kpi-card warn">
     <div class="kpi-label">Large-shift pro gap</div>
@@ -688,17 +688,14 @@ function fmtDate(s) {
 
 // ---- Compute KPI cards dynamically from the data (so refreshing SEC1/SEC2/SEC3 alone keeps these accurate) ----
 (function computeKPIs() {
-  const totalReq = SEC1.reduce((s, r) => s + parseInt(r[3], 10), 0);
-  const totalConf = SEC1.reduce((s, r) => s + parseInt(r[4], 10), 0);
   const totalUnfilled5 = SEC1.reduce((s, r) => s + parseInt(r[5], 10), 0);
-  const bizCount = new Set(SEC1.map(r => r[0])).size;
+  const unfilledShiftCount5 = SEC1.filter(r => parseInt(r[5], 10) > 0).length;
 
   const hdGap = SEC2.reduce((s, r) => { const g = parseInt(r[5], 10); return s + (g > 0 ? g : 0); }, 0);
   document.getElementById('kpiHdGap').textContent = hdGap;
 
-  document.getElementById('kpiUnfilled5').textContent = totalUnfilled5 + hdGap;
-  document.getElementById('kpiUnfilled5Sub').textContent =
-    `${totalUnfilled5} next 5 days · ${hdGap} large shifts`;
+  document.getElementById('kpiUnfilled5').textContent = unfilledShiftCount5;
+  document.getElementById('kpiUnfilled5Sub').textContent = `${totalUnfilled5} pros unfilled`;
 
   const totalFilled = SEC3.reduce((s, r) => s + parseInt(r[3], 10), 0);
   document.getElementById('kpiFilled').textContent = totalFilled;
