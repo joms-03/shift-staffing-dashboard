@@ -307,11 +307,44 @@
   .badge.POSTED { background: var(--gray-bg); color: var(--muted); }
   .badge.UNAPPROVED { background: var(--orange-bg); color: var(--orange); }
   .badge.UNFILLED { background: var(--red-bg); color: var(--red); }
+  .badge.Verified { background: var(--blue-bg); color: var(--blue); }
+  .badge.Unverified { background: var(--gray-bg); color: var(--muted); }
+  .badge.Contacted { background: var(--green-bg); color: var(--green); }
+  .badge.Pending { background: var(--orange-bg); color: var(--orange); }
   .num-red { color: var(--red); font-weight: 700; }
   .num-green { color: var(--green); font-weight: 700; }
   .num-zero { color: var(--muted); }
   .chart-wrap { position: relative; height: 340px; }
   .chart-wrap.small { height: 300px; }
+  .mini-kpi-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .mini-kpi-card {
+    background: var(--gray-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+  }
+  .mini-kpi-label {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: .03em;
+    margin-bottom: 4px;
+  }
+  .mini-kpi-value { font-size: 20px; font-weight: 700; line-height: 1.1; }
+  .mini-kpi-sub { font-size: 11px; color: var(--muted); margin-top: 3px; }
+  .link-btn {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--accent);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .link-btn:hover { text-decoration: underline; }
   footer {
     text-align: center;
     color: var(--muted);
@@ -321,6 +354,7 @@
   @media (max-width: 900px) {
     .kpi-row { grid-template-columns: repeat(2, 1fr); }
     .grid-2 { grid-template-columns: 1fr; }
+    .mini-kpi-row { grid-template-columns: repeat(2, 1fr); }
   }
 </style>
 </head>
@@ -514,6 +548,101 @@
   </div>
 </details>
 
+<details class="panel">
+  <summary class="panel-summary">
+    <div>
+      <h2>Outreach Queue &mdash; Business First 5</h2>
+      <div class="panel-desc">Pros in the upcoming-shift outreach window. "Outreach" reflects whether an agent has actually logged a note &mdash; not the sheet's own status field, which lags behind real activity.</div>
+    </div>
+    <span class="toggle-btn">
+      <span class="toggle-text">Show less</span>
+      <span class="chevron">&#9662;</span>
+    </span>
+  </summary>
+  <div class="panel-body">
+    <div class="mini-kpi-row">
+      <div class="mini-kpi-card">
+        <div class="mini-kpi-label">In outreach queue</div>
+        <div class="mini-kpi-value" id="kpiOutreachQueue">&mdash;</div>
+        <div class="mini-kpi-sub">pros tied to upcoming shifts</div>
+      </div>
+      <div class="mini-kpi-card">
+        <div class="mini-kpi-label">Outreached</div>
+        <div class="mini-kpi-value" id="kpiOutreached">&mdash;</div>
+        <div class="mini-kpi-sub" id="kpiOutreachedSub">have a logged note</div>
+      </div>
+      <div class="mini-kpi-card">
+        <div class="mini-kpi-label">Not yet outreached</div>
+        <div class="mini-kpi-value" id="kpiNotOutreached">&mdash;</div>
+        <div class="mini-kpi-sub">no note logged yet</div>
+      </div>
+      <div class="mini-kpi-card">
+        <div class="mini-kpi-label">Top agent (all-time)</div>
+        <div class="mini-kpi-value" id="kpiTopAgent">&mdash;</div>
+        <div class="mini-kpi-sub" id="kpiTopAgentSub">notes logged</div>
+      </div>
+    </div>
+    <div class="filter-bar" style="margin-bottom:14px;">
+      <select class="filter-select" id="outreachMarketFilter"><option value="">All Markets</option></select>
+      <select class="filter-select" id="outreachAgentFilter"><option value="">All Agents</option></select>
+      <select class="filter-select" id="outreachStatusFilter">
+        <option value="">All Pros</option>
+        <option value="Contacted">Contacted</option>
+        <option value="Pending">Pending</option>
+      </select>
+    </div>
+    <div class="table-scroll" style="max-height:480px;">
+      <table id="tblOutreach">
+        <thead>
+          <tr>
+            <th data-key="0">Pro</th>
+            <th data-key="1">Location</th>
+            <th data-key="2">Market</th>
+            <th data-key="3">Skill</th>
+            <th data-key="4" style="text-align:right">Hrs to Start</th>
+            <th data-key="5">Shift Start</th>
+            <th data-key="6">Verified</th>
+            <th>Outreach</th>
+            <th data-key="7">Notes</th>
+            <th data-key="8">Agent</th>
+            <th>Link</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</details>
+
+<details class="panel">
+  <summary class="panel-summary">
+    <div>
+      <h2>Top Agents &mdash; All-Time Outreach</h2>
+      <div class="panel-desc">Total notes logged per agent across the full outreach history (not just the current queue window).</div>
+    </div>
+    <span class="toggle-btn">
+      <span class="toggle-text">Show less</span>
+      <span class="chevron">&#9662;</span>
+    </span>
+  </summary>
+  <div class="panel-body">
+    <div class="grid-2">
+      <div class="table-scroll">
+        <table id="tblAgents">
+          <thead>
+            <tr>
+              <th data-key="0">Agent</th>
+              <th data-key="1" style="text-align:right">Notes Logged</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="chart-wrap small"><canvas id="agentsChart"></canvas></div>
+    </div>
+  </div>
+</details>
+
 <footer>
   Static snapshot &mdash; ask Claude to refresh this dashboard whenever the sheet updates.
 </footer>
@@ -521,7 +650,9 @@
 <script>
 const SEC1 = [["Fever - Candlelight @ El Paso Extra Space Storage", "2026-07-16 12:00:00", "Assistant Team Lead", "1", "0", "1", "CONFIRMED", "Auto Select Off", "PRIVATE_DIRECT_OFFER", "Lucas Olejnicak", "Justin Friend"], ["Fever - Candlelight @ El Paso Extra Space Storage", "2026-07-16 23:30:00", "Assistant Team Lead", "1", "0", "1", "CONFIRMED", "Auto Select Off", "PRIVATE_DIRECT_OFFER", "Lucas Olejnicak", "Justin Friend"], ["Fever - Candlelight @ Ritz Carlton Marina Del Rey", "2026-07-17 15:30:00", "Assistant Team Lead", "1", "0", "1", "POSTED", "Auto Select Off", "PRIVATE_DIRECT_OFFER", "Evan Russell", "Justin Friend"], ["Fever - SSI, An Idiot's Guide to Wine @ The Charleston", "2026-07-18 14:00:00", "Event Lead", "1", "0", "1", "POSTED", "Auto Select Off", "MARKETPLACE", "Lucas Olejnicak", "Justin Friend"], ["Fever - SSI, An Idiot's Guide to Wine @ The Charleston", "2026-07-18 15:30:00", "Beer & Wine Bartender", "2", "0", "2", "CONFIRMED", "Auto Select Off", "MARKETPLACE", "Lucas Olejnicak", "Justin Friend"], ["Fever - Candlelight @ The Celebrity Showroom", "2026-07-19 15:00:00", "Event Lead", "1", "0", "1", "CONFIRMED", "Auto Select Off", "MARKETPLACE", "Not Found", "Not Found"], ["Fever - Candlelight @ The Celebrity Showroom", "2026-07-19 15:00:00", "Assistant Team Lead", "1", "0", "1", "CONFIRMED", "Auto Select Off", "MARKETPLACE", "Not Found", "Not Found"], ["Fever - Candlelight @ The Celebrity Showroom", "2026-07-19 15:00:00", "Event Staff", "6", "1", "5", "UNFILLED", "Auto Select On", "MARKETPLACE", "Not Found", "Not Found"], ["Aleras Table", "2026-07-20 09:30:00", "Food Service Worker", "1", "0", "1", "CONFIRMED", "Auto Select On", "MARKETPLACE", "Jaclyn Dight", "Kat Tatkin"]];
 const SEC2 = [["Fever - DroneArt @ Suburu Field", "2026-07-16 13:00", "General Laborer", "12", "14", "-2", "Jaclyn Dight", "Kat Tatkin"], ["Fever - DroneArt @ Suburu Field", "2026-07-16 18:00", "Event Staff", "16", "20", "-4", "Jaclyn Dight", "Kat Tatkin"], ["Levy - Baird Convention Center", "2026-07-22 13:00", "Event Help", "100", "25", "75", "Marlon Harris", "Caroline Roberts"], ["University of Michigan", "2026-07-24 12:00", "Event Help", "50", "38", "12", "Marlon Harris", "Caroline Roberts"], ["Levy - Baird Convention Center", "2026-07-24 13:00", "Event Help", "100", "22", "78", "Marlon Harris", "Caroline Roberts"], ["Aramark Facilities - Paycor Stadium", "2026-07-24 23:00", "General Cleaning", "25", "32", "-7", "Jaclyn Dight", "Kat Tatkin"], ["Stadium People - Forefront Field", "2026-07-25 12:00", "General Laborer", "40", "50", "-10", "Lucas Olejnicak", "Kat Tatkin"], ["University of Michigan", "2026-07-25 12:00", "Event Help", "50", "35", "15", "Marlon Harris", "Caroline Roberts"], ["Levy - Baird Convention Center", "2026-07-25 13:00", "Event Help", "100", "28", "72", "Marlon Harris", "Caroline Roberts"], ["Aramark Facilities - Paycor Stadium", "2026-07-25 23:00", "General Cleaning", "25", "32", "-7", "Jaclyn Dight", "Kat Tatkin"], ["Sanofi Pasteur", "2026-08-13 09:00", "Banquet Server", "12", "0", "12", "Jaclyn Dight", "Kat Tatkin"]];
-const SEC3 = [["2026-07-16", "DW Presents Inkarceration Music Festival", "0", "1", "0", "1", "0"], ["2026-07-16", "Eatie’s", "0", "1", "0", "1", "0"], ["2026-07-16", "Feeding Tampa Bay Causeway Center - Events", "0", "2", "0", "2", "2"], ["2026-07-16", "Fever - Candlelight @ El Paso Extra Space Storage", "0", "4", "0", "0", "4"], ["2026-07-16", "Fever - DroneArt @ Suburu Field", "0", "4", "0", "3", "0"], ["2026-07-16", "Toyota Financial Center - Infuse Hospitality", "0", "1", "0", "1", "0"], ["2026-07-17", "Fever - Candlelight @ Indianapolis Scotish Rite", "0", "2", "0", "0", "0"], ["2026-07-17", "Fever - Candlelight @ Ritz Carlton Marina Del Rey", "0", "1", "0", "0", "2"], ["2026-07-17", "IKEA New Haven", "0", "1", "0", "1", "0"], ["2026-07-17", "The Little Shop of Horticulture", "0", "1", "0", "1", "0"], ["2026-07-18", "Aramark - St Johnland Assisted Living", "0", "1", "0", "1", "0"], ["2026-07-18", "Feld Motorsports - MJAM S2 - Spectrum Center", "0", "1", "0", "1", "0"], ["2026-07-18", "Fever - SSI, An Idiot's Guide to Wine @ The Charleston", "0", "1", "0", "0", "0"], ["2026-07-19", "Feld Motorsports - MJAM S2 - Spectrum Center", "0", "1", "0", "1", "0"], ["2026-07-19", "Fever - Candlelight @ The Celebrity Showroom", "1", "2", "0", "1", "0"], ["2026-07-19", "WM Events - Atlanta", "0", "2", "0", "2", "0"], ["2026-07-20", "Aleras Table", "0", "1", "0", "1", "0"], ["2026-07-21", "Feeding Tampa Bay Causeway Center - Events", "0", "1", "0", "1", "1"], ["2026-07-21", "IKEA New Haven", "0", "1", "0", "1", "0"], ["2026-07-22", "Feeding Tampa Bay Causeway Center - Events", "0", "0", "0", "1", "1"], ["2026-07-22", "IKEA New Haven", "0", "1", "0", "1", "0"], ["2026-07-22", "Levy - Baird Convention Center", "1", "0", "0", "1", "0"], ["2026-07-23", "IKEA New Haven", "0", "1", "0", "1", "0"], ["2026-07-23", "Ringling Bros. (RB-148) - Mortgage Matchup Center", "0", "1", "0", "1", "0"], ["2026-07-24", "Aramark Facilities - Paycor Stadium", "0", "1", "0", "1", "0"], ["2026-07-24", "Fever - Candlelight @ The Vibiana", "0", "1", "0", "0", "0"], ["2026-07-24", "Fever - SSI, An Idiot's Guide to Wine @ The Box MKE", "0", "2", "0", "0", "0"], ["2026-07-24", "Fever - SSI, An Idiot's Guide to Wine @ The Center at 2300", "0", "1", "0", "1", "0"], ["2026-07-24", "Fever - SSI, We Call It @ Jazz - The Cleveland Art Museum - Gartner Auditorium", "0", "3", "0", "0", "2"], ["2026-07-24", "IKEA New Haven", "0", "1", "0", "1", "0"], ["2026-07-24", "Levy - Baird Convention Center", "1", "0", "0", "1", "0"], ["2026-07-24", "Ringling Bros. (RB-148) - Mortgage Matchup Center", "0", "1", "0", "1", "0"], ["2026-07-24", "University of Michigan", "1", "0", "0", "1", "0"], ["2026-07-25", "Aramark Facilities - Paycor Stadium", "0", "1", "0", "1", "0"], ["2026-07-25", "Feld Motorsports - MJAM S2 - Pensacola Bay Center", "1", "0", "0", "1", "0"], ["2026-07-25", "Fever - Candlelight @ The Madison Center for the Arts", "1", "2", "0", "0", "2"], ["2026-07-25", "Fever - Candlelight @ Wealthy Theatre", "0", "0", "0", "0", "0"], ["2026-07-25", "Fever - Pilots @ The Palmer House - Honroe Room", "0", "0", "0", "0", "0"], ["2026-07-25", "Fever - SSI, An Idiot's Guide to Wine @ The Barrel Room", "0", "2", "0", "1", "1"], ["2026-07-25", "Fever - SSI, An Idiot's Guide to Wine @ The Chop Shop", "0", "2", "0", "0", "0"], ["2026-07-25", "Fever - SSI, We Call It @ Ballet - Hendrick's Live!", "0", "3", "0", "0", "0"], ["2026-07-25", "Fever - SSI, We Call It @ Jazz - Edison's", "0", "1", "0", "0", "0"], ["2026-07-25", "Levy - Baird Convention Center", "1", "0", "0", "1", "0"], ["2026-07-25", "Ringling Bros. (RB-148) - Mortgage Matchup Center", "0", "1", "0", "1", "0"], ["2026-07-25", "Stadium People - Forefront Field", "0", "1", "0", "1", "0"], ["2026-07-25", "University of Michigan", "1", "0", "0", "1", "0"], ["2026-07-26", "Feld Motorsports - MJAM S2 - Pensacola Bay Center", "1", "0", "0", "1", "0"], ["2026-07-26", "Ringling Bros. (RB-148) - Mortgage Matchup Center", "0", "1", "0", "1", "0"], ["2026-07-29", "Daisy's Fish Shack", "0", "3", "0", "3", "0"], ["2026-07-30", "Daisy's Fish Shack", "0", "2", "0", "2", "0"], ["2026-07-31", "Fever - SSI, The Jury Experience @ Nesholm Family Lecture Hall at McCaw Hall", "1", "3", "0", "0", "0"], ["2026-08-01", "CONESTEE PARK", "0", "1", "0", "1", "0"], ["2026-08-01", "Fever - SSI, An Idiot's Guide to Wine @ Palladian Arthouse", "0", "2", "0", "2", "0"], ["2026-08-01", "Joe farmer rec center", "0", "1", "0", "1", "0"], ["2026-08-07", "Fever - SSI, An Idiot's Guide to Wine @ The Local Drive", "0", "0", "0", "0", "0"], ["2026-08-08", "Fever - Candlelight @ African American Performing Arts Center", "0", "0", "0", "0", "2"], ["2026-08-08", "Verde at Cincinnati Open", "0", "2", "0", "0", "0"], ["2026-08-09", "Verde at Cincinnati Open", "0", "2", "0", "0", "0"], ["2026-08-10", "Verde at Cincinnati Open", "0", "1", "0", "0", "0"], ["2026-08-11", "Levy - Cincinnati Open", "2", "0", "0", "2", "0"], ["2026-08-12", "Levy - Cincinnati Open", "0", "0", "0", "0", "0"], ["2026-08-13", "Fever - Candlelight @ El Paso Extra Space Storage", "0", "0", "0", "0", "1"], ["2026-08-13", "Sanofi Pasteur", "0", "0", "0", "1", "0"], ["2026-08-14", "Fever - SSI, We Call It @ Lincoln Theatre - Jazz", "0", "0", "0", "0", "0"], ["2026-08-15", "LocoMotive Live-K-POP SUPERSTARS @ The Louisville Palace", "0", "1", "0", "1", "1"], ["2026-08-16", "Fever - Candlelight @ Howard Theater", "1", "0", "0", "0", "0"], ["2026-08-21", "Fever - SSI, An Idiot's Guide to Wine @ Walker Studios", "0", "0", "0", "0", "0"], ["2026-08-22", "Fever - SSI, An Idiot's Guide to Wine @ Palladian Arthouse", "0", "0", "0", "1", "0"], ["2026-08-28", "Fever - SSI, An Idiot's Guide to Wine @ The Charleston", "0", "1", "0", "0", "0"], ["2026-09-05", "Sensational Sips", "0", "0", "0", "2", "0"], ["2026-09-11", "LocoMotive Live-K-POP SUPERSTARS @ The Met", "0", "1", "0", "1", "0"], ["2026-09-18", "Fever - SSI, An Idiot's Guide to Wine @ The Center at 2300", "0", "0", "0", "1", "0"], ["2026-09-20", "Fever, SSI - The Jury Experience @ Roulette Theater", "0", "2", "0", "0", "3"], ["2026-09-25", "Fever - SSI, An Idiot's Guide to Wine @ The Local Drive", "0", "0", "0", "0", "0"], ["2026-10-02", "Fever - SSI, An Idiot's Guide to Wine @ Walker Studios", "0", "0", "0", "0", "0"], ["2026-10-04", "Fever, SSI - The Jury Experience @ Pollak Theater", "1", "2", "0", "0", "2"], ["2026-10-09", "Fever - Candlelight @ Clubhouse on South Temple", "0", "0", "0", "0", "0"], ["2026-10-10", "Fever - Candlelight @ Clubhouse on South Temple", "0", "0", "0", "0", "0"], ["2026-10-11", "Fever, SSI - The Jury Experience @ The Warehouse at FTC", "1", "1", "0", "2", "1"], ["2026-10-18", "Fever - SSI, The Jury Experience @ The Space Westbury", "1", "2", "0", "0", "2"], ["2026-10-30", "Fever - SSI, An Idiot's Guide to Wine @ The Center at 2300", "0", "0", "0", "0", "0"], ["2026-11-07", "Fever, SSI - The Jury Experience @ Pollak Theater", "0", "2", "0", "0", "2"], ["2026-11-15", "Fever, SSI - The Jury Experience @ The Warehouse at FTC", "0", "0", "0", "1", "2"], ["2026-12-05", "Fever, SSI - The Jury Experience @ Roulette Theater", "0", "1", "0", "0", "2"], ["2026-12-06", "Fever - SSI, The Jury Experience @ The Space Westbury", "0", "2", "0", "0", "2"], ["2026-12-19", "Palladio Banquet hall", "0", "0", "1", "1", "0"], ["2026-12-27", "LocoMotive Live - K-POP SUPERSTARS @ The Truth", "1", "0", "0", "1", "1"], ["2027-06-12", "Chao Club", "0", "0", "5", "5", "0"]];
+const SEC3 = [["2026-07-15", "Aramark - St Johnland Assisted Living", "0", "1", "0", "1", "0"], ["2026-07-15", "Eden Village Retirement Center - Morrison", "0", "0", "0", "1", "0"], ["2026-07-15", "Feeding Tampa Bay Causeway Center - Events", "0", "1", "0", "1", "1"], ["2026-07-15", "Fever - DroneArt @ Suburu Field", "0", "1", "0", "1", "0"], ["2026-07-15", "Toyota Financial Center - Infuse Hospitality", "0", "0", "0", "1", "0"], ["2026-07-16", "DW Presents Inkarceration Music Festival", "0", "1", "0", "1", "0"], ["2026-07-16", "Eatie’s", "0", "1", "0", "1", "0"], ["2026-07-16", "Feeding Tampa Bay Causeway Center - Events", "0", "2", "0", "2", "2"], ["2026-07-16", "Fever - Candlelight @ El Paso Extra Space Storage", "0", "4", "0", "0", "4"], ["2026-07-16", "Fever - DroneArt @ Suburu Field", "0", "4", "0", "3", "0"], ["2026-07-16", "Toyota Financial Center - Infuse Hospitality", "0", "1", "0", "1", "0"], ["2026-07-17", "Fever - Candlelight @ Indianapolis Scotish Rite", "0", "2", "0", "0", "0"], ["2026-07-17", "Fever - Candlelight @ Ritz Carlton Marina Del Rey", "0", "1", "0", "0", "2"], ["2026-07-17", "IKEA New Haven", "0", "1", "0", "1", "0"], ["2026-07-17", "The Little Shop of Horticulture", "0", "1", "0", "1", "0"], ["2026-07-18", "Aramark - St Johnland Assisted Living", "0", "1", "0", "1", "0"], ["2026-07-18", "Feld Motorsports - MJAM S2 - Spectrum Center", "0", "1", "0", "1", "0"], ["2026-07-18", "Fever - SSI, An Idiot's Guide to Wine @ The Charleston", "0", "1", "0", "0", "0"], ["2026-07-18", "Most Holy Redeemer Church", "0", "0", "1", "1", "0"], ["2026-07-19", "Feld Motorsports - MJAM S2 - Spectrum Center", "0", "1", "0", "1", "0"], ["2026-07-19", "Fever - Candlelight @ The Celebrity Showroom", "1", "2", "0", "1", "0"], ["2026-07-19", "WM Events - Atlanta", "0", "2", "0", "2", "0"], ["2026-07-20", "Aleras Table", "0", "1", "0", "1", "0"], ["2026-07-21", "Feeding Tampa Bay Causeway Center - Events", "0", "1", "0", "1", "1"], ["2026-07-21", "IKEA New Haven", "0", "1", "0", "1", "0"], ["2026-07-22", "Feeding Tampa Bay Causeway Center - Events", "0", "0", "0", "1", "1"], ["2026-07-22", "IKEA New Haven", "0", "1", "0", "1", "0"], ["2026-07-22", "Levy - Baird Convention Center", "1", "0", "0", "1", "0"], ["2026-07-23", "IKEA New Haven", "0", "1", "0", "1", "0"], ["2026-07-23", "Ringling Bros. (RB-148) - Mortgage Matchup Center", "0", "1", "0", "1", "0"], ["2026-07-24", "Aramark Facilities - Paycor Stadium", "0", "1", "0", "1", "0"], ["2026-07-24", "Fever - Candlelight @ The Vibiana", "0", "1", "0", "0", "0"], ["2026-07-24", "Fever - SSI, An Idiot's Guide to Wine @ The Box MKE", "0", "2", "0", "0", "0"], ["2026-07-24", "Fever - SSI, An Idiot's Guide to Wine @ The Center at 2300", "0", "1", "0", "1", "0"], ["2026-07-24", "Fever - SSI, We Call It @ Jazz - The Cleveland Art Museum - Gartner Auditorium", "0", "3", "0", "0", "2"], ["2026-07-24", "IKEA New Haven", "0", "1", "0", "1", "0"], ["2026-07-24", "Levy - Baird Convention Center", "1", "0", "0", "1", "0"], ["2026-07-24", "Ringling Bros. (RB-148) - Mortgage Matchup Center", "0", "1", "0", "1", "0"], ["2026-07-24", "University of Michigan", "1", "0", "0", "1", "0"], ["2026-07-25", "Aramark Facilities - Paycor Stadium", "0", "1", "0", "1", "0"], ["2026-07-25", "Feld Motorsports - MJAM S2 - Pensacola Bay Center", "1", "0", "0", "1", "0"], ["2026-07-25", "Fever - Candlelight @ The Madison Center for the Arts", "1", "2", "0", "0", "2"], ["2026-07-25", "Fever - Candlelight @ Wealthy Theatre", "0", "0", "0", "0", "0"], ["2026-07-25", "Fever - Pilots @ The Palmer House - Honroe Room", "0", "0", "0", "0", "0"], ["2026-07-25", "Fever - SSI, An Idiot's Guide to Wine @ The Barrel Room", "0", "2", "0", "1", "1"], ["2026-07-25", "Fever - SSI, An Idiot's Guide to Wine @ The Chop Shop", "0", "2", "0", "0", "0"], ["2026-07-25", "Fever - SSI, We Call It @ Ballet - Hendrick's Live!", "0", "3", "0", "0", "0"], ["2026-07-25", "Fever - SSI, We Call It @ Jazz - Edison's", "0", "1", "0", "0", "0"], ["2026-07-25", "Levy - Baird Convention Center", "1", "0", "0", "1", "0"], ["2026-07-25", "Ringling Bros. (RB-148) - Mortgage Matchup Center", "0", "1", "0", "1", "0"], ["2026-07-25", "Stadium People - Forefront Field", "1", "0", "0", "1", "0"], ["2026-07-25", "University of Michigan", "1", "0", "0", "1", "0"], ["2026-07-26", "Feld Motorsports - MJAM S2 - Pensacola Bay Center", "1", "0", "0", "1", "0"], ["2026-07-26", "Ringling Bros. (RB-148) - Mortgage Matchup Center", "0", "1", "0", "1", "0"], ["2026-07-29", "Daisy's Fish Shack", "0", "3", "0", "3", "0"], ["2026-07-30", "Daisy's Fish Shack", "0", "2", "0", "2", "0"], ["2026-07-31", "Fever - SSI, The Jury Experience @ Nesholm Family Lecture Hall at McCaw Hall", "1", "3", "0", "0", "0"], ["2026-08-01", "CONESTEE PARK", "0", "1", "0", "1", "0"], ["2026-08-01", "Fever - SSI, An Idiot's Guide to Wine @ Palladian Arthouse", "0", "2", "0", "2", "0"], ["2026-08-01", "Joe farmer rec center", "0", "1", "0", "1", "0"], ["2026-08-07", "Fever - SSI, An Idiot's Guide to Wine @ The Local Drive", "0", "0", "0", "0", "0"], ["2026-08-08", "Fever - Candlelight @ African American Performing Arts Center", "0", "0", "0", "0", "2"], ["2026-08-08", "Verde at Cincinnati Open", "0", "2", "0", "0", "0"], ["2026-08-09", "Verde at Cincinnati Open", "0", "2", "0", "0", "0"], ["2026-08-10", "Verde at Cincinnati Open", "0", "1", "0", "0", "0"], ["2026-08-11", "Levy - Cincinnati Open", "1", "1", "0", "2", "0"], ["2026-08-12", "Levy - Cincinnati Open", "0", "0", "0", "0", "0"], ["2026-08-13", "Fever - Candlelight @ El Paso Extra Space Storage", "0", "0", "0", "0", "1"], ["2026-08-13", "Sanofi Pasteur", "0", "0", "0", "1", "0"], ["2026-08-14", "Fever - SSI, We Call It @ Lincoln Theatre - Jazz", "0", "0", "0", "0", "0"], ["2026-08-15", "LocoMotive Live-K-POP SUPERSTARS @ The Louisville Palace", "0", "1", "0", "1", "1"], ["2026-08-16", "Fever - Candlelight @ Howard Theater", "1", "0", "0", "0", "0"], ["2026-08-21", "Fever - SSI, An Idiot's Guide to Wine @ Walker Studios", "0", "0", "0", "0", "0"], ["2026-08-22", "Fever - SSI, An Idiot's Guide to Wine @ Palladian Arthouse", "0", "0", "0", "1", "0"], ["2026-08-28", "Fever - SSI, An Idiot's Guide to Wine @ The Charleston", "0", "0", "0", "0", "0"], ["2026-09-05", "Sensational Sips", "0", "0", "0", "2", "0"], ["2026-09-11", "LocoMotive Live-K-POP SUPERSTARS @ The Met", "0", "1", "0", "1", "0"], ["2026-09-18", "Fever - SSI, An Idiot's Guide to Wine @ The Center at 2300", "0", "0", "0", "1", "0"], ["2026-09-20", "Fever, SSI - The Jury Experience @ Roulette Theater", "0", "2", "0", "0", "3"], ["2026-09-25", "Fever - SSI, An Idiot's Guide to Wine @ The Local Drive", "0", "0", "0", "0", "0"], ["2026-10-02", "Fever - SSI, An Idiot's Guide to Wine @ Walker Studios", "0", "0", "0", "0", "0"], ["2026-10-04", "Fever, SSI - The Jury Experience @ Pollak Theater", "1", "2", "0", "0", "2"], ["2026-10-09", "Fever - Candlelight @ Clubhouse on South Temple", "0", "0", "0", "0", "0"], ["2026-10-10", "Fever - Candlelight @ Clubhouse on South Temple", "0", "0", "0", "0", "0"], ["2026-10-11", "Fever, SSI - The Jury Experience @ The Warehouse at FTC", "1", "1", "0", "2", "1"], ["2026-10-18", "Fever - SSI, The Jury Experience @ The Space Westbury", "1", "2", "0", "0", "2"], ["2026-10-30", "Fever - SSI, An Idiot's Guide to Wine @ The Center at 2300", "0", "0", "0", "0", "0"], ["2026-11-07", "Fever, SSI - The Jury Experience @ Pollak Theater", "0", "2", "0", "0", "2"], ["2026-11-15", "Fever, SSI - The Jury Experience @ The Warehouse at FTC", "0", "0", "0", "1", "2"], ["2026-12-05", "Fever, SSI - The Jury Experience @ Roulette Theater", "0", "1", "0", "0", "2"], ["2026-12-06", "Fever - SSI, The Jury Experience @ The Space Westbury", "0", "2", "0", "0", "2"], ["2026-12-19", "Palladio Banquet hall", "0", "0", "1", "1", "0"], ["2026-12-27", "LocoMotive Live - K-POP SUPERSTARS @ The Truth", "1", "0", "0", "1", "1"], ["2027-06-12", "Chao Club", "0", "0", "5", "5", "0"]];
+const OUTREACH_QUEUE = [["Aarika De Souza", "Feeding Tampa Bay Causeway Center - Events", "Tampa Bay/Sarasota, FL", "Banquet Server", "5.94", "2026-07-16 16:30:00", "Verified", "PDO / Solid pro / Confirmation & Shift reminder sent - cy", "Cyrus", "https://biz.qwick.com/locations/29619/gigs/1595548/applicants"], ["Janice Wilcox", "Feeding Tampa Bay Causeway Center - Events", "Tampa Bay/Sarasota, FL", "Banquet Server", "5.94", "2026-07-16 16:30:00", "Verified", "PDO / Solid pro / Confirmation & Shift reminder sent - cy", "Cyrus", "https://biz.qwick.com/locations/29619/gigs/1595548/applicants"], ["Anthony Mussari", "DW Presents Inkarceration Music Festival", "Columbus, OH", "FOH Support", "6.44", "2026-07-16 17:00:00", "Verified", "Solid pro, text sent - MJC", "Mark Camillo", "https://biz.qwick.com/locations/13797/gigs/1560588/applicants"], ["ELAINA WORTHINGTON", "DW Presents Inkarceration Music Festival", "Columbus, OH", "FOH Support", "6.44", "2026-07-16 17:00:00", "Verified", "Pro called out", "Mark Camillo", "https://biz.qwick.com/locations/13797/gigs/1560588/applicants"], ["Jeffrey Thomas", "DW Presents Inkarceration Music Festival", "Columbus, OH", "FOH Support", "6.44", "2026-07-16 17:00:00", "Verified", "Solid pro, text sent - MJC", "Mark Camillo", "https://biz.qwick.com/locations/13797/gigs/1560588/applicants"], ["Joetta Wallace", "DW Presents Inkarceration Music Festival", "Columbus, OH", "FOH Support", "6.44", "2026-07-16 17:00:00", "Verified", "Solid pro, text sent - MJC", "Mark Camillo", "https://biz.qwick.com/locations/13797/gigs/1560588/applicants"], ["Timothy Keene", "DW Presents Inkarceration Music Festival", "Columbus, OH", "FOH Support", "6.44", "2026-07-16 17:00:00", "Verified", "Pro called out", "Mark Camillo", "https://biz.qwick.com/locations/13797/gigs/1560588/applicants"], ["An’Drae Robinson", "Feeding Tampa Bay Causeway Center - Events", "Tampa Bay/Sarasota, FL", "Dishwasher", "6.94", "2026-07-16 17:30:00", "Verified", "PDO, Solid Pro - MJC", "Mark Camillo", "https://biz.qwick.com/locations/29619/gigs/1595536/applicants"], ["Shronda Nash", "Eatie’s", "Dallas, TX", "Server Assistant", "7.44", "2026-07-16 17:00:00", "Verified", "Solid pro, text sent - MJC", "Mark Camillo", "https://biz.qwick.com/locations/15411/gigs/1596593/applicants"], ["Tammy Cromer", "Eatie’s", "Dallas, TX", "Server Assistant", "7.44", "2026-07-16 17:00:00", "Unverified", "Solid pro, text sent - MJC", "Mark Camillo", "https://biz.qwick.com/locations/15411/gigs/1596593/applicants"], ["Teschina X", "Eatie’s", "Dallas, TX", "Server Assistant", "7.44", "2026-07-16 17:00:00", "Verified", "Solid pro, text sent - MJC", "Mark Camillo", "https://biz.qwick.com/locations/15411/gigs/1596593/applicants"], ["Gregory Giordano", "Legion Brewing - West Morehead", "Charlotte, NC", "General Laborer", "21.44", "2026-07-17 08:00:00", "Verified", "Repeat Shift - MJC", "Mark Camillo", "https://biz.qwick.com/locations/30149/gigs/1599728/applicants"], ["Amy Sutherland", "New Albany Country Club", "Columbus, OH", "Banquet Server", "22.44", "2026-07-17 09:00:00", "Verified", "Repeat Shift - MJC", "Mark Camillo", "https://biz.qwick.com/locations/29684/gigs/1599006/applicants"], ["Kinda Alexander", "New Albany Country Club", "Columbus, OH", "Banquet Server", "22.44", "2026-07-17 09:00:00", "Verified", "Skill Cert, Solid pro, text sent - MJC", "Mark Camillo", "https://biz.qwick.com/locations/29684/gigs/1599006/applicants"], ["Michael F", "New Albany Country Club", "Columbus, OH", "Banquet Server", "22.44", "2026-07-17 09:00:00", "Verified", "Skill Cert, Solid pro, text sent - MJC", "Mark Camillo", "https://biz.qwick.com/locations/29684/gigs/1599006/applicants"], ["Shahla Lee", "New Albany Country Club", "Columbus, OH", "Banquet Server", "22.44", "2026-07-17 09:00:00", "Verified", "Skill Cert, Solid pro, text sent - MJC", "Mark Camillo", "https://biz.qwick.com/locations/29684/gigs/1599006/applicants"], ["Marques Johnson", "IKEA New Haven", "New York, NY-NJ", "General Cleaning", "25.44", "2026-07-17 12:00:00", "Verified", "No answer. Sent text message. -bry", "Marc Bryan", "https://biz.qwick.com/locations/30040/gigs/1594917/applicants"], ["Devora Rodriguez", "The Little Shop of Horticulture", "San Francisco-Oakland, CA", "Event Help", "25.44", "2026-07-17 09:00:00", "Verified", "Solid pro, text sent - MJC", "Mark Camillo", "https://biz.qwick.com/locations/27263/gigs/1597203/applicants"], ["Mohammed Jackson", "The Little Shop of Horticulture", "San Francisco-Oakland, CA", "Event Help", "25.44", "2026-07-17 09:00:00", "Verified", "No ans, sent text - MJC", "Mark Camillo", "https://biz.qwick.com/locations/27263/gigs/1597203/applicants"], ["Jamie Hagan", "Eurest - Burlington Stores Savannah", "Savannah, GA / Hilton Head, SC", "Dishwasher", "45.44", "2026-07-18 08:00:00", "Verified", "RJC - BF5 - Repeat shift.", "Rhys", "https://biz.qwick.com/locations/28259/gigs/1597076/applicants"], ["Jerry Patterson", "Aramark - St Johnland Assisted Living", "New York, NY-NJ", "Banquet Server", "48.94", "2026-07-18 11:30:00", "Verified", "Solid pro, text sent - MJC", "Mark Camillo", "https://biz.qwick.com/locations/30108/gigs/1596930/applicants"], ["Casey Holmes", "Holbrook Sugar Hill - EL/IL", "Atlanta, GA", "Dishwasher", "69.44", "2026-07-19 08:00:00", "Verified", "Repeat Shift - MJC", "Mark Camillo", "https://biz.qwick.com/locations/12287/gigs/1591996/applicants"]];
+const OUTREACH_AGENTS = [["Rhys", 796], ["MOPS", 722], ["Melissa", 542], ["Marc Bryan", 220], ["Gelo", 200], ["Mark Camillo", 198], ["Audrey", 129], ["Cyrus", 12], ["Love Chand", 10], ["Mavis", 7], ["Joms", 6]];
 
 function fmtDate(s) {
   const d = new Date(s.replace(' ', 'T'));
@@ -713,6 +844,7 @@ function attachSort(tableId, state, types, rerender) {
   const table = document.getElementById(tableId);
   let sortState = {};
   table.querySelectorAll('th').forEach(th => {
+    if (th.dataset.key === undefined) return;
     th.classList.add('sortable');
     th.addEventListener('click', () => {
       const key = parseInt(th.dataset.key, 10);
@@ -810,6 +942,108 @@ new Chart(document.getElementById('statusMixChart'), {
     responsive: true,
     maintainAspectRatio: false,
     plugins: { legend: { position: 'bottom', labels: {font:{size:11}} }, title: { display: true, text: 'Slot status across full pipeline', font: {size: 12} } }
+  }
+});
+
+// ---- Outreach Queue: columns are [pro, phone, location, market, skill, hoursToStart, shiftStart, verified, notes, agent, shiftUrl] ----
+// "Outreach" is derived from whether a note has actually been logged, since the sheet's own
+// outreach_status column lags behind real agent activity (rows sit at "Not outreached" long
+// after an agent has texted/called and logged a note).
+function renderOutreachTable(data) {
+  const tbody = document.querySelector('#tblOutreach tbody');
+  tbody.innerHTML = '';
+  data.forEach(row => {
+    const [pro, location, market, skill, hrs, start, verified, notes, agent, url] = row;
+    const contacted = notes.trim() !== '';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${pro}</td>
+      <td>${location}</td>
+      <td>${market}</td>
+      <td>${skill}</td>
+      <td style="text-align:right">${parseFloat(hrs).toFixed(1)}</td>
+      <td>${fmtDate(start)}</td>
+      <td><span class="badge ${verified}">${verified}</span></td>
+      <td><span class="badge ${contacted ? 'Contacted' : 'Pending'}">${contacted ? 'Contacted' : 'Pending'}</span></td>
+      <td>${notes || '&mdash;'}</td>
+      <td>${agent || '&mdash;'}</td>
+      <td><a class="link-btn" href="${url}" target="_blank" rel="noopener">View &rarr;</a></td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+(function computeOutreachKPIs() {
+  const total = OUTREACH_QUEUE.length;
+  const outreached = OUTREACH_QUEUE.filter(r => r[7].trim() !== '').length;
+  const notYet = total - outreached;
+  document.getElementById('kpiOutreachQueue').textContent = total;
+  document.getElementById('kpiOutreached').textContent = outreached;
+  document.getElementById('kpiOutreachedSub').textContent =
+    `${total ? Math.round(outreached / total * 100) : 0}% of queue has a note`;
+  document.getElementById('kpiNotOutreached').textContent = notYet;
+  if (OUTREACH_AGENTS.length) {
+    const [topName, topCount] = OUTREACH_AGENTS[0];
+    document.getElementById('kpiTopAgent').textContent = topName;
+    document.getElementById('kpiTopAgentSub').textContent = `${topCount} notes logged`;
+  }
+})();
+
+const outreachTypes = ['text','text','text','text','num','text','text','text','text'];
+const outreachState = { data: OUTREACH_QUEUE.slice() };
+function applyOutreachFilters() {
+  const market = document.getElementById('outreachMarketFilter').value;
+  const agent = document.getElementById('outreachAgentFilter').value;
+  const status = document.getElementById('outreachStatusFilter').value;
+  outreachState.data = OUTREACH_QUEUE.filter(r => {
+    if (market && r[2] !== market) return false;
+    if (agent && r[8] !== agent) return false;
+    const contacted = r[7].trim() !== '';
+    if (status === 'Contacted' && !contacted) return false;
+    if (status === 'Pending' && contacted) return false;
+    return true;
+  });
+  renderOutreachTable(outreachState.data);
+}
+populateSelect('outreachMarketFilter', uniqueVals(OUTREACH_QUEUE, 2));
+populateSelect('outreachAgentFilter', uniqueVals(OUTREACH_QUEUE, 8).filter(Boolean));
+document.getElementById('outreachMarketFilter').addEventListener('change', applyOutreachFilters);
+document.getElementById('outreachAgentFilter').addEventListener('change', applyOutreachFilters);
+document.getElementById('outreachStatusFilter').addEventListener('change', applyOutreachFilters);
+applyOutreachFilters();
+attachSort('tblOutreach', outreachState, outreachTypes, () => renderOutreachTable(outreachState.data));
+
+// ---- Top Agents: all-time outreach volume from the full notes ledger ----
+function renderAgentsTable(data) {
+  const tbody = document.querySelector('#tblAgents tbody');
+  tbody.innerHTML = '';
+  data.forEach(([agent, count]) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${agent}</td><td style="text-align:right">${count}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+const agentsState = { data: OUTREACH_AGENTS.slice() };
+renderAgentsTable(agentsState.data);
+attachSort('tblAgents', agentsState, ['text','num'], () => renderAgentsTable(agentsState.data));
+
+const agentsSorted = OUTREACH_AGENTS.slice().sort((a, b) => b[1] - a[1]);
+new Chart(document.getElementById('agentsChart'), {
+  type: 'bar',
+  data: {
+    labels: agentsSorted.map(([a]) => a),
+    datasets: [{
+      label: 'Notes logged (all-time)',
+      data: agentsSorted.map(([, c]) => c),
+      backgroundColor: '#3F7A4E',
+      borderRadius: 4,
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    indexAxis: 'y',
+    plugins: { legend: { display: false }, title: { display: true, text: 'Total outreach notes logged per agent (all-time)', font: {size: 12} } },
+    scales: { x: { grid: { color: '#eee' } }, y: { grid: { display: false } } }
   }
 });
 </script>
