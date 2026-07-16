@@ -412,7 +412,7 @@
   <summary class="panel-summary">
     <div>
       <h2>&#9888; Needs Approval</h2>
-      <div class="panel-desc">Shifts sitting in unapproved status. Anything tagged "Next 5 days" needs sign-off immediately.</div>
+      <div class="panel-desc">Every unapproved shift across the full pipeline, not just the next 5 days, sorted soonest first. Anything tagged "Next 5 days" needs sign-off immediately.</div>
     </div>
     <span class="toggle-btn">
       <span class="toggle-text">Show less</span>
@@ -781,7 +781,7 @@ document.getElementById('kpiUnapproved').textContent = totalUnapprovedCount;
 if (unapprovedList.length > 0) {
   bannerEl.classList.add('show');
   const totalCount = totalUnapprovedCount;
-  const urgentCount = unapprovedList.filter(r => r[4] >= 0 && r[4] <= 5).length;
+  const urgentCount = unapprovedList.filter(r => r[5] >= 0 && r[5] <= 5).length;
   bannerText.textContent = `${totalCount} unapproved shift${totalCount !== 1 ? 's' : ''} across ${unapprovedList.length} business${unapprovedList.length !== 1 ? 'es' : ''}` +
     (urgentCount > 0 ? ` — ${urgentCount} due within 5 days` : '');
   kpiUnapprovedSub.textContent = `across ${unapprovedList.length} business${unapprovedList.length !== 1 ? 'es' : ''}`;
