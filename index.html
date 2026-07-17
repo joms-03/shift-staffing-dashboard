@@ -536,6 +536,11 @@
         <option value="unapproved">Unapproved Only</option>
       </select>
       <select class="filter-select" id="tbl3MonthFilter"><option value="">All Months</option></select>
+      <select class="filter-select" id="tbl3AutoSelectFilter">
+        <option value="">All Auto Select</option>
+        <option value="on">Auto Select On</option>
+        <option value="off">Auto Select Off</option>
+      </select>
       <input class="search-box" id="searchBox" placeholder="Search business name...">
     </div>
     <div class="grid-2" style="margin-bottom:16px;">
@@ -848,11 +853,14 @@ function applyTbl3Filters() {
   const q = document.getElementById('searchBox').value.toLowerCase();
   const view = document.getElementById('tbl3ViewFilter').value;
   const month = document.getElementById('tbl3MonthFilter').value;
+  const autoSelect = document.getElementById('tbl3AutoSelectFilter').value;
   t3state.data = SEC3.filter(r => {
     if (q && !r[1].toLowerCase().includes(q)) return false;
     if (view === 'unfilled' && parseInt(r[2],10) <= 0) return false;
     if (view === 'unapproved' && parseInt(r[4],10) <= 0) return false;
     if (month && !r[0].startsWith(month)) return false;
+    if (autoSelect === 'on' && parseInt(r[5],10) <= 0) return false;
+    if (autoSelect === 'off' && parseInt(r[5],10) > 0) return false;
     return true;
   });
   renderTable('#tbl3', t3state.data, t3types);
@@ -867,6 +875,7 @@ months.forEach(m => {
 document.getElementById('searchBox').addEventListener('input', applyTbl3Filters);
 document.getElementById('tbl3ViewFilter').addEventListener('change', applyTbl3Filters);
 document.getElementById('tbl3MonthFilter').addEventListener('change', applyTbl3Filters);
+document.getElementById('tbl3AutoSelectFilter').addEventListener('change', applyTbl3Filters);
 applyTbl3Filters();
 
 // generic sort-on-click-header (sorts state.data in place, keeping filters applied)
