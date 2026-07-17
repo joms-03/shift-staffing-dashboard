@@ -453,6 +453,7 @@
       <select class="filter-select" id="tbl1ManagerFilter"><option value="">All Account Managers</option></select>
       <select class="filter-select" id="tbl1OpsManagerFilter"><option value="">All Ops Managers</option></select>
       <select class="filter-select" id="tbl1StatusFilter"><option value="">All Statuses</option></select>
+      <select class="filter-select" id="tbl1AutoSelectFilter"><option value="">All Auto Select</option></select>
     </div>
     <div class="table-scroll">
       <table id="tbl1">
@@ -806,15 +807,18 @@ function applyTbl1Filters() {
   const mgr = document.getElementById('tbl1ManagerFilter').value;
   const opsMgr = document.getElementById('tbl1OpsManagerFilter').value;
   const status = document.getElementById('tbl1StatusFilter').value;
-  t1state.data = SEC1.filter(r => (!mgr || r[9] === mgr) && (!opsMgr || r[10] === opsMgr) && (!status || r[6] === status));
+  const autoSelect = document.getElementById('tbl1AutoSelectFilter').value;
+  t1state.data = SEC1.filter(r => (!mgr || r[9] === mgr) && (!opsMgr || r[10] === opsMgr) && (!status || r[6] === status) && (!autoSelect || r[7] === autoSelect));
   renderTable('#tbl1', t1state.data, t1types);
 }
 populateSelect('tbl1ManagerFilter', uniqueVals(SEC1, 9));
 populateSelect('tbl1OpsManagerFilter', uniqueVals(SEC1, 10));
 populateSelect('tbl1StatusFilter', uniqueVals(SEC1, 6));
+populateSelect('tbl1AutoSelectFilter', uniqueVals(SEC1, 7));
 document.getElementById('tbl1ManagerFilter').addEventListener('change', applyTbl1Filters);
 document.getElementById('tbl1OpsManagerFilter').addEventListener('change', applyTbl1Filters);
 document.getElementById('tbl1StatusFilter').addEventListener('change', applyTbl1Filters);
+document.getElementById('tbl1AutoSelectFilter').addEventListener('change', applyTbl1Filters);
 applyTbl1Filters();
 
 // ---- Table 2: Large Shifts (Manager filters) ----
