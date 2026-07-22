@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<script type="application/json" id="cowork-artifact-meta">
+{
+  "name": "Qwick Magic Team Dashboard",
+  "schemaVersion": 1
+}
+</script>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Qwick Magic Team Dashboard</title>
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #FBF3E7;
+    --card: #ffffff;
+    --border: #e8dfcd;
+    --text: #262626;
+    --muted: #8a8272;
+    --accent: #3F7A4E;
+    --green-bg: #e8f3ea;
+    --gray-bg: #f2ede0;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  header.hub-head {
+    padding: 22px 28px 0;
+  }
+  h1 { font-size: 22px; margin: 0 0 4px; font-weight: 700; }
+  .subtitle { color: var(--muted); font-size: 13px; }
+
+  nav.top-tabs {
+    display: flex;
+    gap: 6px;
+    padding: 18px 28px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .top-tab {
+    appearance: none; border: none; background: none; cursor: pointer;
+    font: inherit; font-size: 14px; font-weight: 700; color: var(--muted);
+    padding: 10px 18px; border-radius: 10px 10px 0 0; position: relative; top: 1px;
+  }
+  .top-tab:hover { color: var(--text); }
+  .top-tab.active {
+    color: var(--accent); background: var(--card);
+    border: 1px solid var(--border); border-bottom-color: var(--card);
+  }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  nav.sub-tabs {
+    display: flex; gap: 8px; align-items: center;
+    padding: 16px 28px 0;
+  }
+  .sub-tabs-label { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin-right: 6px; }
+  .sub-tab {
+    appearance: none; cursor: pointer; font: inherit; font-size: 12.5px; font-weight: 700;
+    color: var(--text); background: var(--gray-bg); border: 1px solid var(--border);
+    padding: 6px 14px; border-radius: 20px;
+  }
+  .sub-tab:hover { border-color: var(--accent); }
+  .sub-tab.active { color: var(--accent); background: var(--green-bg); border-color: var(--accent); }
+  .sub-tab.coming-soon { color: var(--muted); cursor: default; }
+  .sub-tab.coming-soon:hover { border-color: var(--border); }
+
+  .sub-panel { display: none; }
+  .sub-panel.active { display: block; }
+
+  .embed-frame {
+    display: block; width: 100%; border: 0; background: var(--bg);
+    min-height: 300px;
+  }
+  .embed-loading {
+    display: flex; align-items: center; justify-content: center;
+    height: 200px; color: var(--muted); font-size: 13px;
+  }
+
+  footer.hub-foot {
+    padding: 16px 28px 40px; font-size: 11.5px; color: var(--muted); text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<header class="hub-head">
+  <h1>Qwick Magic Team Dashboard</h1>
+  <div class="subtitle">One place for Business First 5 and every Magic Team special-task dashboard.</div>
+</header>
+
+<nav class="top-tabs" id="topTabs">
+  <button class="top-tab" data-tab="bf5">Business First 5</button>
+  <button class="top-tab" data-tab="magic">Magic Team Special Tasks</button>
+</nav>
+
+<section class="tab-panel" id="tab-bf5">
+  <iframe class="embed-frame" data-src="index.html" title="Business First 5 Shifts Dashboard"></iframe>
+</section>
+
+<section class="tab-panel" id="tab-magic">
+  <nav class="sub-tabs" id="magicSubTabs"><span class="sub-tabs-label">Special task:</span></nav>
+  <div id="magicSubPanels"></div>
+</section>
+
+<footer class="hub-foot">Each tab loads its own dashboard, which keeps refreshing on its own schedule &mdash; nothing here changes that.</footer>
+
+<script>
+// Add a new Magic Team special-task dashboard by adding one entry here.
+// `src: null` renders a "coming soon" sub-tab with no iframe yet.
+const MAGIC_TASKS = [
+  { id: 'housekeeping', label: 'Housekeeping', src: 'housekeeping-outreach.html' },
+];
+
+const magicSubTabsEl = document.getElementById('magicSubTabs');
+const magicSubPanelsEl = document.getElementById('magicSubPanels');
+
+MAGIC_TASKS.forEach((task, i) => {
+  const btn = document.createElement('button');
+  btn.className = 'sub-tab' + (task.src ? '' : ' coming-soon') + (i === 0 ? ' active' : '');
+  btn.dataset.subtab = task.id;
+  btn.textContent = task.label + (task.src ? '' : ' (coming soon)');
+  if (task.src) btn.addEventListener('click', () => activateSubTab(task.id));
+  magicSubTabsEl.appendChild(btn);
+
+  const panel = document.createElement('div');
+  panel.className = 'sub-panel' + (i === 0 ? ' active' : '');
+  panel.id = 'subpanel-' + task.id;
+  if (task.src) {
+    const iframe = document.createElement('iframe');
+    iframe.className = 'embed-frame';
+    iframe.dataset.src = task.src;
+    iframe.title = task.label + ' dashboard';
+    panel.appendChild(iframe);
+  } else {
+    const placeholder = document.createElement('div');
+    placeholder.className = 'embed-loading';
+    placeholder.textContent = task.label + ' dashboard coming soon.';
+    panel.appendChild(placeholder);
+  }
+  magicSubPanelsEl.appendChild(panel);
+});
+
+function activateSubTab(id) {
+  document.querySelectorAll('#magicSubTabs .sub-tab').forEach(el => el.classList.toggle('active', el.dataset.subtab === id));
+  document.querySelectorAll('.sub-panel').forEach(el => el.classList.toggle('active', el.id === 'subpanel-' + id));
+  loadFrame(document.querySelector('#subpanel-' + id + ' iframe'));
+  setHash('magic', id);
+}
+
+// ---- Lazy-load + auto-resize iframes so embedded pages don't get a nested scrollbar ----
+function loadFrame(iframe) {
+  if (!iframe || iframe.src) return;
+  iframe.src = iframe.dataset.src;
+  const resize = () => {
+    try {
+      const doc = iframe.contentWindow.document;
+      iframe.style.height = doc.documentElement.scrollHeight + 'px';
+    } catch (e) { /* not expected same-origin, but don't break the tab if it happens */ }
+  };
+  iframe.addEventListener('load', () => {
+    resize();
+    let tries = 0;
+    const interval = setInterval(() => { resize(); if (++tries > 10) clearInterval(interval); }, 300);
+  });
+}
+
+// ---- Top-level tab switching ----
+function activateTopTab(id) {
+  document.querySelectorAll('#topTabs .top-tab').forEach(el => el.classList.toggle('active', el.dataset.tab === id));
+  document.querySelectorAll('.tab-panel').forEach(el => el.classList.toggle('active', el.id === 'tab-' + id));
+  if (id === 'bf5') {
+    loadFrame(document.querySelector('#tab-bf5 iframe'));
+    setHash(id);
+  } else {
+    const activeSub = document.querySelector('#magicSubTabs .sub-tab.active');
+    if (activeSub) loadFrame(document.querySelector('#subpanel-' + activeSub.dataset.subtab + ' iframe'));
+    setHash(id, activeSub && activeSub.dataset.subtab);
+  }
+}
+
+document.querySelectorAll('#topTabs .top-tab').forEach(btn => {
+  btn.addEventListener('click', () => activateTopTab(btn.dataset.tab));
+});
+
+// ---- Shareable deep links: #bf5, #magic, or #magic/housekeeping ----
+function setHash(top, sub) {
+  const next = '#' + top + (sub ? '/' + sub : '');
+  if (location.hash !== next) history.replaceState(null, '', next);
+}
+
+function routeFromHash() {
+  const [top, sub] = location.hash.replace(/^#/, '').split('/');
+  if (top === 'magic') {
+    activateTopTab('magic');
+    if (sub && document.querySelector(`.sub-tab[data-subtab="${sub}"]`)) activateSubTab(sub);
+  } else {
+    activateTopTab('bf5');
+  }
+}
+
+routeFromHash();
+</script>
+</body>
+</html>
