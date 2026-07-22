@@ -229,6 +229,35 @@
 <script>if (window.self !== window.top) document.documentElement.classList.add('embedded');</script>
 </head>
 <body>
+<div id="authGate" style="position:fixed;inset:0;z-index:99999;background:var(--bg,#FBF3E7);display:flex;align-items:center;justify-content:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <form id="authForm" style="background:var(--card,#fff);border:1px solid var(--border,#e8dfcd);border-radius:12px;padding:28px 32px;display:flex;flex-direction:column;gap:12px;width:260px;box-shadow:0 8px 24px rgba(0,0,0,.1);">
+    <div style="font-weight:700;font-size:15px;color:var(--text,#262626);">Enter password</div>
+    <input id="authInput" type="password" autocomplete="current-password" placeholder="Password" style="padding:9px 12px;border:1px solid var(--border,#e8dfcd);border-radius:8px;font-size:14px;">
+    <div id="authError" style="color:var(--red,#d64545);font-size:12.5px;display:none;">Incorrect password.</div>
+    <button type="submit" style="background:var(--accent,#3F7A4E);color:#fff;border:none;border-radius:8px;padding:9px 12px;font-weight:600;cursor:pointer;font-size:13.5px;">Unlock</button>
+  </form>
+</div>
+<script>
+(function () {
+  var PASSWORD = 'Ch3f';
+  var STORAGE_KEY = 'qwickDashboardAuthed';
+  var gate = document.getElementById('authGate');
+  if (localStorage.getItem(STORAGE_KEY) === 'yes') { gate.remove(); return; }
+  document.getElementById('authForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var input = document.getElementById('authInput');
+    if (input.value === PASSWORD) {
+      localStorage.setItem(STORAGE_KEY, 'yes');
+      gate.remove();
+    } else {
+      document.getElementById('authError').style.display = 'block';
+      input.value = '';
+      input.focus();
+    }
+  });
+})();
+</script>
+
 
 <header class="page-head">
   <div>
