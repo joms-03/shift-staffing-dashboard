@@ -153,6 +153,34 @@
   .search-box { width: 210px; }
   .filter-select { cursor: pointer; }
 
+  .multiselect { position: relative; display: inline-block; }
+  .multiselect-btn {
+    display: inline-flex; align-items: center; gap: 8px; min-width: 130px;
+    justify-content: space-between; font: inherit;
+  }
+  .multiselect-btn::after { content: '\25be'; font-size: 10px; color: var(--muted); }
+  .multiselect-panel {
+    display: none; position: absolute; top: calc(100% + 4px); left: 0; z-index: 20;
+    background: #fff; border: 1px solid var(--border); border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0,0,0,.1); padding: 6px; min-width: 220px;
+    max-height: 280px; overflow-y: auto;
+  }
+  .multiselect.open .multiselect-panel { display: block; }
+  .multiselect-actions {
+    display: flex; justify-content: space-between; padding: 2px 6px 6px;
+    border-bottom: 1px solid var(--border); margin-bottom: 6px;
+  }
+  .multiselect-actions button {
+    background: none; border: none; color: var(--accent); font-size: 11.5px;
+    font-weight: 600; cursor: pointer; padding: 2px 4px; font-family: inherit;
+  }
+  .multiselect-option {
+    display: flex; align-items: center; gap: 8px; padding: 5px 6px;
+    font-size: 13px; border-radius: 6px; cursor: pointer;
+  }
+  .multiselect-option:hover { background: var(--gray-bg); }
+  .multiselect-option input { margin: 0; }
+
   table { width: 100%; border-collapse: collapse; font-size: 13px; }
   th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
   th { font-size: 11px; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); font-weight: 600; white-space: nowrap; }
@@ -310,7 +338,7 @@
   <div class="panel-body">
     <div class="filters">
       <input class="search-box" id="unfilledSearch" type="text" placeholder="Search business&hellip;">
-      <select class="filter-select" id="unfilledSkillFilter"><option value="">All skillsets</option></select>
+      <div class="multiselect" id="unfilledSkillFilter"><button type="button" class="filter-select multiselect-btn">All skillsets</button><div class="multiselect-panel"></div></div>
       <select class="filter-select" id="unfilledStatusFilter"><option value="">All statuses</option></select>
       <select class="filter-select" id="unfilledAutoFilter">
         <option value="">Auto Select: All</option>
@@ -352,7 +380,7 @@
   <div class="panel-body">
     <div class="filters">
       <input class="search-box" id="largeSearch" type="text" placeholder="Search business&hellip;">
-      <select class="filter-select" id="largeSkillFilter"><option value="">All skillsets</option></select>
+      <div class="multiselect" id="largeSkillFilter"><button type="button" class="filter-select multiselect-btn">All skillsets</button><div class="multiselect-panel"></div></div>
       <select class="filter-select" id="largeMgrFilter"><option value="">All Account Managers</option></select>
       <select class="filter-select" id="largeOpsFilter"><option value="">All Ops Managers</option></select>
     </div>
@@ -392,7 +420,7 @@
         <option value="0">All upcoming</option>
       </select>
       <select class="filter-select" id="outreachMarketFilter"><option value="">All markets</option></select>
-      <select class="filter-select" id="outreachSkillFilter"><option value="">All skillsets</option></select>
+      <div class="multiselect" id="outreachSkillFilter"><button type="button" class="filter-select multiselect-btn">All skillsets</button><div class="multiselect-panel"></div></div>
       <select class="filter-select" id="outreachTierFilter">
         <option value="">All severities</option>
         <option value="high">High severity only</option>
@@ -440,7 +468,7 @@
         <option value="monitor">Monitor</option>
         <option value="healthy">Healthy</option>
       </select>
-      <select class="filter-select" id="shiftHealthSkillFilter"><option value="">All skillsets</option></select>
+      <div class="multiselect" id="shiftHealthSkillFilter"><button type="button" class="filter-select multiselect-btn">All skillsets</button><div class="multiselect-panel"></div></div>
       <select class="filter-select" id="shiftHealthAutoFilter">
         <option value="">Auto Select: All</option>
         <option value="On">Auto Select: On</option>
@@ -635,6 +663,67 @@ function populateSelect(id, values) {
     sel.appendChild(opt);
   });
 }
+
+// Checkbox-dropdown multi-select (native <select multiple> needs ctrl-click
+// and a fixed height, which is poor UX for filter bars). Empty selection
+// means "no filter" (matches everything), same convention as the old
+// single-select "All ___" option.
+function createMultiSelect(id, options, onChange) {
+  const root = document.getElementById(id);
+  const btn = root.querySelector('.multiselect-btn');
+  const panel = root.querySelector('.multiselect-panel');
+  const selected = new Set();
+
+  const actions = document.createElement('div');
+  actions.className = 'multiselect-actions';
+  actions.innerHTML = '<button type="button" data-act="all">Select all</button><button type="button" data-act="clear">Clear</button>';
+  panel.appendChild(actions);
+  actions.querySelector('[data-act="all"]').addEventListener('click', () => {
+    options.forEach(o => selected.add(o));
+    syncCheckboxes(); updateLabel(); onChange();
+  });
+  actions.querySelector('[data-act="clear"]').addEventListener('click', () => {
+    selected.clear();
+    syncCheckboxes(); updateLabel(); onChange();
+  });
+
+  options.forEach(opt => {
+    const label = document.createElement('label');
+    label.className = 'multiselect-option';
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.value = opt;
+    checkbox.addEventListener('change', () => {
+      if (checkbox.checked) selected.add(opt); else selected.delete(opt);
+      updateLabel(); onChange();
+    });
+    const span = document.createElement('span');
+    span.textContent = opt;
+    label.appendChild(checkbox);
+    label.appendChild(span);
+    panel.appendChild(label);
+  });
+
+  function syncCheckboxes() {
+    panel.querySelectorAll('input[type="checkbox"]').forEach(cb => { cb.checked = selected.has(cb.value); });
+  }
+  function updateLabel() {
+    if (selected.size === 0) btn.textContent = 'All skillsets';
+    else if (selected.size <= 2) btn.textContent = Array.from(selected).join(', ');
+    else btn.textContent = `${selected.size} skillsets`;
+  }
+
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    document.querySelectorAll('.multiselect.open').forEach(el => { if (el !== root) el.classList.remove('open'); });
+    root.classList.toggle('open');
+  });
+  document.addEventListener('click', (e) => {
+    if (!root.contains(e.target)) root.classList.remove('open');
+  });
+
+  return { getSelected: () => selected };
+}
 function gapInfo(requested, confirmed) {
   const gap = requested - confirmed;
   const cls = gap > 0 ? 'short' : (gap === 0 ? 'exact' : 'buffer');
@@ -804,7 +893,7 @@ function renderOutreachQueue() {
   const search = document.getElementById('outreachSearch').value.trim().toLowerCase();
   const windowDays = parseInt(document.getElementById('outreachWindowFilter').value, 10);
   const market = document.getElementById('outreachMarketFilter').value;
-  const skill = document.getElementById('outreachSkillFilter').value;
+  const skills = outreachSkillMS.getSelected();
   const tierFilter = document.getElementById('outreachTierFilter').value;
 
   const now = new Date();
@@ -819,7 +908,7 @@ function renderOutreachQueue() {
     const effTier = e.risk.tier === 'ok' ? 'low' : e.risk.tier;
     if (tierFilter && effTier !== tierFilter) return false;
     if (market && r[OCOLS.market] !== market) return false;
-    if (skill && r[OCOLS.skill] !== skill) return false;
+    if (skills.size && !skills.has(r[OCOLS.skill])) return false;
     if (search && !(String(r[OCOLS.proName]).toLowerCase().includes(search) || String(r[OCOLS.business]).toLowerCase().includes(search))) return false;
     return true;
   });
@@ -868,13 +957,13 @@ function renderShiftHealth() {
   const tbody = document.querySelector('#shiftHealthTable tbody');
   const search = document.getElementById('shiftHealthSearch').value.trim().toLowerCase();
   const status = document.getElementById('shiftHealthStatusFilter').value;
-  const skill = document.getElementById('shiftHealthSkillFilter').value;
+  const skills = shiftHealthSkillMS.getSelected();
   const auto = document.getElementById('shiftHealthAutoFilter').value;
 
   let rows = outreachShifts.filter(s => {
     if (search && !(s.business.toLowerCase().includes(search) || s.market.toLowerCase().includes(search))) return false;
     if (status && s.action !== status) return false;
-    if (skill && s.skill !== skill) return false;
+    if (skills.size && !skills.has(s.skill)) return false;
     if (auto && s.autoSelect !== auto) return false;
     return true;
   });
@@ -988,7 +1077,7 @@ let unfilledSort = { key: 'date', dir: 1 };
 function renderUnfilled() {
   const tbody = document.querySelector('#unfilledTable tbody');
   const search = document.getElementById('unfilledSearch').value.trim().toLowerCase();
-  const skill = document.getElementById('unfilledSkillFilter').value;
+  const skills = unfilledSkillMS.getSelected();
   const status = document.getElementById('unfilledStatusFilter').value;
   const auto = document.getElementById('unfilledAutoFilter').value;
   const mgr = document.getElementById('unfilledMgrFilter').value;
@@ -996,7 +1085,7 @@ function renderUnfilled() {
 
   let rows = SEC1.filter(r => {
     if (search && !r[SEC1_COLS.business].toLowerCase().includes(search)) return false;
-    if (skill && r[SEC1_COLS.skill] !== skill) return false;
+    if (skills.size && !skills.has(r[SEC1_COLS.skill])) return false;
     if (status && r[SEC1_COLS.status] !== status) return false;
     if (auto && r[SEC1_COLS.autoSelect] !== auto) return false;
     if (mgr && r[SEC1_COLS.acctMgr] !== mgr) return false;
@@ -1041,13 +1130,13 @@ let largeSort = { key: 'date', dir: 1 };
 function renderLarge() {
   const tbody = document.querySelector('#largeTable tbody');
   const search = document.getElementById('largeSearch').value.trim().toLowerCase();
-  const skill = document.getElementById('largeSkillFilter').value;
+  const skills = largeSkillMS.getSelected();
   const mgr = document.getElementById('largeMgrFilter').value;
   const ops = document.getElementById('largeOpsFilter').value;
 
   let rows = SEC2.filter(r => {
     if (search && !r[SEC2_COLS.business].toLowerCase().includes(search)) return false;
-    if (skill && r[SEC2_COLS.skill] !== skill) return false;
+    if (skills.size && !skills.has(r[SEC2_COLS.skill])) return false;
     if (mgr && r[SEC2_COLS.acctMgr] !== mgr) return false;
     if (ops && r[SEC2_COLS.opsMgr] !== ops) return false;
     return true;
@@ -1225,8 +1314,8 @@ function renderOutlookChart() {
 
 // ============ Wire up ============
 const skills = Array.from(new Set([...SEC1.map(r => r[SEC1_COLS.skill]), ...SEC2.map(r => r[SEC2_COLS.skill])])).sort();
-populateSelect('unfilledSkillFilter', skills);
-populateSelect('largeSkillFilter', skills);
+const unfilledSkillMS = createMultiSelect('unfilledSkillFilter', skills, () => renderUnfilled());
+const largeSkillMS = createMultiSelect('largeSkillFilter', skills, () => renderLarge());
 populateSelect('unfilledStatusFilter', Array.from(new Set(SEC1.map(r => r[SEC1_COLS.status]))).sort());
 
 const acctMgrs = Array.from(new Set(SEC1.map(r => r[SEC1_COLS.acctMgr]).filter(Boolean))).sort();
@@ -1246,10 +1335,10 @@ months.forEach(m => {
 });
 
 ['approvalSearch'].forEach(id => document.getElementById(id).addEventListener('input', renderApproval));
-['unfilledSearch', 'unfilledSkillFilter', 'unfilledStatusFilter', 'unfilledAutoFilter', 'unfilledMgrFilter', 'unfilledOpsFilter'].forEach(id => {
+['unfilledSearch', 'unfilledStatusFilter', 'unfilledAutoFilter', 'unfilledMgrFilter', 'unfilledOpsFilter'].forEach(id => {
   document.getElementById(id).addEventListener('input', renderUnfilled);
 });
-['largeSearch', 'largeSkillFilter', 'largeMgrFilter', 'largeOpsFilter'].forEach(id => {
+['largeSearch', 'largeMgrFilter', 'largeOpsFilter'].forEach(id => {
   document.getElementById(id).addEventListener('input', renderLarge);
 });
 ['pipelineSearch', 'pipelineViewFilter', 'pipelineMonthFilter', 'pipelineAutoFilter'].forEach(id => {
@@ -1259,8 +1348,8 @@ months.forEach(m => {
 const outreachMarkets = Array.from(new Set(REVIEW_ROWS.map(r => r[OCOLS.market]))).sort();
 const outreachSkills = Array.from(new Set(REVIEW_ROWS.map(r => r[OCOLS.skill]))).sort();
 populateSelect('outreachMarketFilter', outreachMarkets);
-populateSelect('outreachSkillFilter', outreachSkills);
-['outreachSearch', 'outreachWindowFilter', 'outreachMarketFilter', 'outreachSkillFilter', 'outreachTierFilter'].forEach(id => {
+const outreachSkillMS = createMultiSelect('outreachSkillFilter', outreachSkills, () => renderOutreachQueue());
+['outreachSearch', 'outreachWindowFilter', 'outreachMarketFilter', 'outreachTierFilter'].forEach(id => {
   document.getElementById(id).addEventListener('input', renderOutreachQueue);
 });
 ['bonusSearch', 'bonusActionFilter'].forEach(id => {
@@ -1274,8 +1363,8 @@ document.querySelectorAll('#outreachTable th.sortable').forEach(th => th.addEven
 }));
 
 const shiftHealthSkills = Array.from(new Set(OUTREACH_ROWS.map(r => r[OCOLS.skill]))).sort();
-populateSelect('shiftHealthSkillFilter', shiftHealthSkills);
-['shiftHealthSearch', 'shiftHealthStatusFilter', 'shiftHealthSkillFilter', 'shiftHealthAutoFilter'].forEach(id => {
+const shiftHealthSkillMS = createMultiSelect('shiftHealthSkillFilter', shiftHealthSkills, () => renderShiftHealth());
+['shiftHealthSearch', 'shiftHealthStatusFilter', 'shiftHealthAutoFilter'].forEach(id => {
   document.getElementById(id).addEventListener('input', renderShiftHealth);
 });
 
