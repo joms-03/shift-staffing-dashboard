@@ -20,7 +20,6 @@ GID = "123456789"
 
 # Positional column order embedded into ROWS. Keep in sync with the
 # `COLS` index map documented at the top of the ROWS <script> in the HTML.
-# pro_phone_number is deliberately excluded: this feeds a public dashboard.
 COLUMNS = [
     "business_name", "location_id", "shift_id", "shift_date", "market", "skill",
     "requested_pros", "confirmed_pros", "auto_select_status", "shift_type",
@@ -33,6 +32,7 @@ COLUMNS = [
     "pro_cancellations_last_30_days", "pro_cancel_rate_last_30_days_pct",
     "no_shows_last_30_days", "distance_from_pro_last_seen_to_business_miles",
     "pro_last_seen_at", "confirmation_timestamp", "selection_source",
+    "pro_phone_number",
 ]
 
 INT_COLS = {
