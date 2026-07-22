@@ -227,6 +227,12 @@
   var PASSWORD = 'Ch3f';
   var STORAGE_KEY = 'qwickDashboardAuthed';
   var gate = document.getElementById('authGate');
+  // Loaded inside the hub's iframe — the hub's own gate already blocks all
+  // interaction with this page, so skip the redundant prompt. (Showing it
+  // anyway breaks visually once this page's iframe gets auto-resized to its
+  // full content height: the gate's fixed overlay covers that entire height,
+  // centering the password form far below the visible viewport.)
+  if (window.self !== window.top) { gate.remove(); return; }
   if (localStorage.getItem(STORAGE_KEY) === 'yes') { gate.remove(); return; }
   document.getElementById('authForm').addEventListener('submit', function (e) {
     e.preventDefault();

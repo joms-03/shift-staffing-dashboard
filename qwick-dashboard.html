@@ -108,6 +108,10 @@
   var PASSWORD = 'Ch3f';
   var STORAGE_KEY = 'qwickDashboardAuthed';
   var gate = document.getElementById('authGate');
+  // Defensive: if this page were ever itself embedded in another frame, trust
+  // the parent's gate instead of showing our own (see index.html/
+  // housekeeping-outreach.html for why a nested gate breaks visually).
+  if (window.self !== window.top) { gate.remove(); return; }
   if (localStorage.getItem(STORAGE_KEY) === 'yes') { gate.remove(); return; }
   document.getElementById('authForm').addEventListener('submit', function (e) {
     e.preventDefault();
