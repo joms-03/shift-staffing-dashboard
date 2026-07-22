@@ -38,9 +38,16 @@
   }
   a.inline-link { color: var(--accent); }
   /* Shown inside the Qwick Magic Team Dashboard hub's iframe — the hub's own
-     tab label already identifies this page, so drop the duplicate H1. */
-  html.embedded header.page-head h1 { display: none; }
+     tab label and logo already identify this page, so drop the duplicates. */
+  html.embedded header.page-head h1,
+  html.embedded header.page-head img.brand-mark { display: none; }
   html.embedded body { padding-top: 12px; }
+  .brand-mark {
+    height: 20px;
+    width: auto;
+    display: block;
+    margin-bottom: 8px;
+  }
   header.page-head {
     display: flex;
     justify-content: space-between;
@@ -210,6 +217,7 @@
 
 <header class="page-head">
   <div>
+    <img class="brand-mark" src="assets/qwick-logo.png" alt="Qwick">
     <h1>Housekeeping Pro Outreach Dashboard</h1>
     <div class="subtitle">Next 7 days of Housekeeping shifts &middot; who to call before a shift falls through, and which businesses need fill or buffer help &middot; built from the <a class="inline-link" href="https://docs.google.com/spreadsheets/d/1rSf0TXQOv7uz4sjkgruL7ObDCJ1qaj1EFdSXCAgeBjo/edit?gid=123456789#gid=123456789" target="_blank" rel="noopener">Housekeeping pro-history sheet</a> &middot; see also the <a class="inline-link" href="qwick-dashboard.html" target="_top">Qwick Magic Team Dashboard</a></div>
   </div>

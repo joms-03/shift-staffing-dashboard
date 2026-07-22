@@ -40,9 +40,16 @@
     padding: 24px 28px 60px;
   }
   /* Shown inside the Qwick Magic Team Dashboard hub's iframe — the hub's own
-     tab label already identifies this page, so drop the duplicate H1. */
-  html.embedded header.page-head h1 { display: none; }
+     tab label and logo already identify this page, so drop the duplicates. */
+  html.embedded header.page-head h1,
+  html.embedded header.page-head img.brand-mark { display: none; }
   html.embedded body { padding-top: 12px; }
+  .brand-mark {
+    height: 20px;
+    width: auto;
+    display: block;
+    margin-bottom: 8px;
+  }
   header.page-head {
     display: flex;
     justify-content: space-between;
@@ -374,6 +381,7 @@
 
 <header class="page-head">
   <div>
+    <img class="brand-mark" src="assets/qwick-logo.png" alt="Qwick">
     <h1>Business First 5 Shifts Dashboard</h1>
     <div class="subtitle">New-business onboarding &amp; shift fill tracking &middot; built from the <a class="inline-link" href="https://docs.google.com/spreadsheets/d/1Ry1cozuvFYRYPv8dg449WaC2mDykAtScb1R1JLmGbjM/edit?gid=2006814828#gid=2006814828" target="_blank" rel="noopener">operations Google Sheet</a> &middot; Account/Ops Managers sourced from the <a class="inline-link" href="https://docs.google.com/spreadsheets/d/1ZJHI_sz51unpEr6RB1WqrBMvH3BhkNFjjm8P1CHNCpk/edit?gid=934826613#gid=934826613" target="_blank" rel="noopener">markets &amp; managers sheet</a> &middot; see also the <a class="inline-link" href="qwick-dashboard.html" target="_top">Qwick Magic Team Dashboard</a></div>
   </div>
