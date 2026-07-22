@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<script type="application/json" id="cowork-artifact-meta">
+{
+  "name": "Housekeeping Pro Outreach Dashboard",
+  "schemaVersion": 1
+}
+</script>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Housekeeping Pro Outreach Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #FBF3E7;
+    --card: #ffffff;
+    --border: #e8dfcd;
+    --text: #262626;
+    --muted: #8a8272;
+    --accent: #3F7A4E;
+    --red: #d64545;
+    --red-bg: #fdecec;
+    --orange: #c76a1a;
+    --orange-bg: #fdf2e3;
+    --green: #3F7A4E;
+    --green-bg: #e8f3ea;
+    --gray-bg: #f2ede0;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    padding: 24px 28px 60px;
+  }
+  a.inline-link { color: var(--accent); }
+  header.page-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  h1 { font-size: 22px; margin: 0 0 4px; font-weight: 700; }
+  .subtitle { color: var(--muted); font-size: 13px; line-height: 1.5; }
+  .snapshot-tag {
+    font-size: 12px;
+    color: var(--muted);
+    background: var(--gray-bg);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 6px 14px;
+    white-space: nowrap;
+  }
+
+  .alert-banner {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    background: var(--red-bg);
+    border: 1px solid #f0b3ab;
+    border-radius: 12px;
+    padding: 12px 18px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .alert-banner.show { display: flex; }
+  .alert-banner .msg { display: flex; align-items: center; gap: 10px; font-size: 13.5px; color: var(--red); font-weight: 600; }
+  .alert-dot {
+    width: 9px; height: 9px; border-radius: 50%; background: var(--red);
+    animation: pulse 1.8s infinite; flex-shrink: 0;
+  }
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(214,69,69,.45); }
+    70% { box-shadow: 0 0 0 8px rgba(214,69,69,0); }
+    100% { box-shadow: 0 0 0 0 rgba(214,69,69,0); }
+  }
+  .alert-banner a.jump { font-size: 12.5px; color: var(--red); text-decoration: underline; font-weight: 600; white-space: nowrap; }
+
+  .kpi-row {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 14px;
+    margin-bottom: 22px;
+  }
+  .kpi-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 18px;
+  }
+  .kpi-label { font-size: 11.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 6px; }
+  .kpi-value { font-size: 26px; font-weight: 700; line-height: 1.1; }
+  .kpi-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .kpi-card.danger .kpi-value { color: var(--red); }
+  .kpi-card.warn .kpi-value { color: var(--orange); }
+  .kpi-card.good .kpi-value { color: var(--green); }
+
+  .chart-panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px 22px 8px;
+    margin-bottom: 22px;
+  }
+  .chart-panel h2 { font-size: 16px; margin: 0 0 2px; }
+  .chart-panel .panel-desc { font-size: 12.5px; color: var(--muted); margin: 0 0 12px; }
+  .chart-wrap { height: 200px; }
+
+  details.panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px 22px;
+    margin-bottom: 22px;
+  }
+  summary.panel-summary { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; cursor: pointer; list-style: none; }
+  summary.panel-summary::-webkit-details-marker { display: none; }
+  summary.panel-summary::marker { content: ""; }
+  .toggle-btn {
+    display: flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 600;
+    color: var(--accent); background: var(--green-bg); border: 1px solid var(--border);
+    padding: 6px 14px; border-radius: 20px; white-space: nowrap; flex-shrink: 0;
+  }
+  summary.panel-summary:hover .toggle-btn { border-color: var(--accent); }
+  .chevron { font-size: 12px; color: var(--accent); transition: transform 0.15s ease; flex-shrink: 0; }
+  details[open] > summary.panel-summary .chevron { transform: rotate(180deg); }
+  .panel-body { margin-top: 14px; }
+  .panel-head { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+  .panel-head h2, summary.panel-summary h2 { font-size: 16px; margin: 0; }
+  .panel-desc { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+  .count-pill {
+    display: inline-block; background: var(--gray-bg); color: var(--muted); font-size: 11.5px;
+    font-weight: 700; padding: 2px 9px; border-radius: 20px; margin-left: 8px; vertical-align: middle;
+  }
+
+  .filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; align-items: center; }
+  .search-box, .filter-select {
+    padding: 7px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; background: #fff; color: var(--text);
+  }
+  .search-box { width: 210px; }
+  .filter-select { cursor: pointer; }
+  label.chk { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text); cursor: pointer; user-select: none; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { font-size: 11px; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); font-weight: 600; white-space: nowrap; }
+  tbody tr:hover { background: var(--gray-bg); }
+  .table-scroll { overflow-x: auto; }
+  .empty-row td { text-align: center; color: var(--muted); padding: 22px 10px; }
+
+  .badge {
+    display: inline-block; font-size: 10.5px; font-weight: 700; padding: 2px 9px; border-radius: 20px; white-space: nowrap;
+  }
+  .badge.high { background: var(--red-bg); color: var(--red); }
+  .badge.medium { background: var(--orange-bg); color: var(--orange); }
+  .badge.ok { background: var(--green-bg); color: var(--green); }
+  .badge.gray { background: var(--gray-bg); color: var(--muted); }
+
+  .reason-chip {
+    display: inline-block; font-size: 10.5px; background: var(--gray-bg); color: var(--text);
+    padding: 2px 8px; border-radius: 10px; margin: 1px 3px 1px 0;
+  }
+  .pro-chip {
+    display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 12px; margin: 1px 3px 1px 0;
+    border: 1px solid var(--border); cursor: default;
+  }
+  .pro-chip.high { background: var(--red-bg); color: var(--red); border-color: #f0b3ab; }
+  .pro-chip.medium { background: var(--orange-bg); color: var(--orange); border-color: #f0d3a8; }
+  .pro-chip.ok { background: #fff; color: var(--text); }
+
+  .gap-badge { font-weight: 700; }
+  .gap-badge.short { color: var(--red); }
+  .gap-badge.exact { color: var(--text); }
+  .gap-badge.buffer { color: var(--green); }
+
+  .biz-link { color: var(--text); font-weight: 600; text-decoration: none; }
+  .biz-link:hover { text-decoration: underline; }
+  .sub-line { color: var(--muted); font-size: 11.5px; margin-top: 1px; }
+
+  th.sortable { cursor: pointer; }
+  th.sortable:hover { color: var(--accent); }
+  th.sortable .arrow { opacity: .5; margin-left: 3px; }
+  th.sortable.active .arrow { opacity: 1; }
+
+  footer { margin-top: 8px; font-size: 11.5px; color: var(--muted); text-align: center; }
+
+  @media (max-width: 1100px) {
+    .kpi-row { grid-template-columns: repeat(3, 1fr); }
+  }
+  @media (max-width: 640px) {
+    .kpi-row { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<header class="page-head">
+  <div>
+    <h1>Housekeeping Pro Outreach Dashboard</h1>
+    <div class="subtitle">Next 7 days of Housekeeping shifts &middot; who to call before a shift falls through, and which businesses need fill or buffer help &middot; built from the <a class="inline-link" href="https://docs.google.com/spreadsheets/d/1rSf0TXQOv7uz4sjkgruL7ObDCJ1qaj1EFdSXCAgeBjo/edit?gid=123456789#gid=123456789" target="_blank" rel="noopener">Housekeeping pro-history sheet</a> &middot; see also the <a class="inline-link" href="index.html">Shift Staffing Dashboard</a></div>
+  </div>
+  <div class="snapshot-tag" id="snapshotTag" data-snapshot-utc="2026-07-22T17:01:20Z">Snapshot &middot; July 22, 2026 17:01 UTC</div>
+</header>
+
+<div class="alert-banner" id="urgentBanner">
+  <div class="msg"><span class="alert-dot"></span><span id="urgentBannerText">Checking for urgent shifts&hellip;</span></div>
+  <a class="jump" href="#outreachPanel">Review outreach queue &darr;</a>
+</div>
+
+<div class="kpi-row">
+  <div class="kpi-card">
+    <div class="kpi-label">HK shifts &middot; next 7 days</div>
+    <div class="kpi-value" id="kpiShifts">&ndash;</div>
+    <div class="kpi-sub" id="kpiShiftsSub">&nbsp;</div>
+  </div>
+  <div class="kpi-card danger">
+    <div class="kpi-label">Unfilled slots</div>
+    <div class="kpi-value" id="kpiUnfilled">&ndash;</div>
+    <div class="kpi-sub" id="kpiUnfilledSub">&nbsp;</div>
+  </div>
+  <div class="kpi-card danger">
+    <div class="kpi-label">High-risk pros to outreach</div>
+    <div class="kpi-value" id="kpiHighRisk">&ndash;</div>
+    <div class="kpi-sub" id="kpiHighRiskSub">&nbsp;</div>
+  </div>
+  <div class="kpi-card warn">
+    <div class="kpi-label">Medium-risk pros to watch</div>
+    <div class="kpi-value" id="kpiMedRisk">&ndash;</div>
+    <div class="kpi-sub" id="kpiMedRiskSub">&nbsp;</div>
+  </div>
+  <div class="kpi-card danger">
+    <div class="kpi-label">Businesses needing fill help</div>
+    <div class="kpi-value" id="kpiNeedsFill">&ndash;</div>
+    <div class="kpi-sub" id="kpiNeedsFillSub">&nbsp;</div>
+  </div>
+  <div class="kpi-card warn">
+    <div class="kpi-label">Businesses needing bonus/overfill</div>
+    <div class="kpi-value" id="kpiNeedsBonus">&ndash;</div>
+    <div class="kpi-sub" id="kpiNeedsBonusSub">&nbsp;</div>
+  </div>
+</div>
+
+<div class="chart-panel">
+  <h2>7-day outlook</h2>
+  <div class="panel-desc">Confirmed slots vs. still-open slots, by shift day.</div>
+  <div class="chart-wrap"><canvas id="outlookChart"></canvas></div>
+</div>
+
+<details class="panel" id="pipelinePanel" open>
+  <summary class="panel-summary">
+    <div>
+      <h2>7-Day Shift Pipeline<span class="count-pill" id="pipelineCount">0</span></h2>
+      <div class="panel-desc">Every Housekeeping shift in the window, who's on it, and how thin the buffer is.</div>
+    </div>
+    <span class="toggle-btn"><span class="chevron">&#9660;</span> Toggle</span>
+  </summary>
+  <div class="panel-body">
+    <div class="filters">
+      <input class="search-box" id="pipelineSearch" type="text" placeholder="Search business or market&hellip;">
+      <select class="filter-select" id="pipelineMarketFilter"><option value="">All markets</option></select>
+      <select class="filter-select" id="pipelineAutoFilter">
+        <option value="">Auto Select: All</option>
+        <option value="On">Auto Select: On</option>
+        <option value="Off">Auto Select: Off</option>
+      </select>
+      <select class="filter-select" id="pipelineDayFilter"><option value="">All 7 days</option></select>
+      <label class="chk"><input type="checkbox" id="pipelineFlaggedOnly"> Flagged shifts only</label>
+    </div>
+    <div class="table-scroll">
+      <table id="pipelineTable">
+        <thead>
+          <tr>
+            <th class="sortable" data-sort="date">Shift <span class="arrow">&#9650;</span></th>
+            <th>Business</th>
+            <th>Market</th>
+            <th>Type</th>
+            <th>Auto Select</th>
+            <th class="sortable" data-sort="gap">Requested / Confirmed <span class="arrow">&#9650;</span></th>
+            <th>Assigned Pros</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</details>
+
+<details class="panel" id="outreachPanel" open>
+  <summary class="panel-summary">
+    <div>
+      <h2>Pro Outreach Queue<span class="count-pill" id="outreachCount">0</span></h2>
+      <div class="panel-desc">Pros assigned to an upcoming shift whose history flags them as a fill risk &mdash; ratings, completion rate, cancellations, or lack of housekeeping experience.</div>
+    </div>
+    <span class="toggle-btn"><span class="chevron">&#9660;</span> Toggle</span>
+  </summary>
+  <div class="panel-body">
+    <div class="filters">
+      <input class="search-box" id="outreachSearch" type="text" placeholder="Search pro or business&hellip;">
+      <select class="filter-select" id="outreachMarketFilter"><option value="">All markets</option></select>
+      <select class="filter-select" id="outreachTierFilter">
+        <option value="">All flagged tiers</option>
+        <option value="high">High risk only</option>
+        <option value="medium">Medium risk only</option>
+      </select>
+      <label class="chk"><input type="checkbox" id="outreachAllRows"> Show unflagged pros too</label>
+    </div>
+    <div class="table-scroll">
+      <table id="outreachTable">
+        <thead>
+          <tr>
+            <th class="sortable" data-sort="score">Risk <span class="arrow">&#9660;</span></th>
+            <th>Pro</th>
+            <th>Business</th>
+            <th class="sortable" data-sort="date">Shift <span class="arrow">&#9650;</span></th>
+            <th>Why flagged</th>
+            <th>Rating</th>
+            <th>Completion (life / 30d)</th>
+            <th>Cancels (30d)</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</details>
+
+<details class="panel" id="businessPanel" open>
+  <summary class="panel-summary">
+    <div>
+      <h2>Business Fill &amp; Bonus Needs<span class="count-pill" id="businessCount">0</span></h2>
+      <div class="panel-desc">Rolled up across the 7-day window &mdash; who's short-staffed, and who's fully booked but one cancellation away from a gap.</div>
+    </div>
+    <span class="toggle-btn"><span class="chevron">&#9660;</span> Toggle</span>
+  </summary>
+  <div class="panel-body">
+    <div class="filters">
+      <input class="search-box" id="businessSearch" type="text" placeholder="Search business&hellip;">
+      <select class="filter-select" id="businessActionFilter">
+        <option value="">All statuses</option>
+        <option value="fill">Needs fill</option>
+        <option value="bonus">Needs bonus/overfill</option>
+        <option value="monitor">Monitor</option>
+        <option value="healthy">Healthy</option>
+      </select>
+    </div>
+    <div class="table-scroll">
+      <table id="businessTable">
+        <thead>
+          <tr>
+            <th>Status</th>
+            <th>Business</th>
+            <th>Market</th>
+            <th>Next shift</th>
+            <th># Shifts</th>
+            <th>Requested / Confirmed</th>
+            <th>Thinnest Shift Buffer</th>
+            <th>Flagged pros</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</details>
+
+<footer>Auto-refreshed hourly from the Housekeeping pro-history sheet. Risk tiers are computed in-browser from pro rating, completion rate, recent cancellations/no-shows, and housekeeping experience &mdash; thresholds can be tuned without waiting on a data refresh.</footer>
+
+<script>
+// Column order produced by scripts/refresh_housekeeping.py — keep this in sync with COLUMNS there.
+const COLS = {
+  business: 0, locationId: 1, shiftId: 2, shiftDate: 3, market: 4, skill: 5,
+  requested: 6, confirmed: 7, autoSelect: 8, shiftType: 9, proId: 10, proName: 11,
+  hkCertified: 12, priorHkShifts: 13, workedHkBefore: 14, priorHkShiftsSameBiz: 15,
+  repeatHkSameBiz: 16, relevantHkExperience: 17, avgRating: 18, ratingsCount: 19,
+  completionLifetime: 20, completion30d: 21, completedLifetime: 22, cancels30d: 23,
+  cancelRate30d: 24, noShows30d: 25, distanceMiles: 26, lastSeenAt: 27,
+  confirmedAt: 28, selectionSource: 29,
+};
+
+const ROWS = [["Brier Creek Country Club NC", 7775, 1610520, "2026-07-22 16:00:00", "Raleigh-Durham, NC", "Housekeeping", 1, 1, "Off", "MARKETPLACE", 101060, "Cynthia Romero chevez", "No", 1, "Yes", 0, "No", "Yes", 4.8, 327, 100.0, 50.0, 330, 0, 0.0, 0, 39.0, "2026-07-22 14:57:15", "2026-07-21 14:45:15", "STAFFER"], ["The Peninsula Club Maintenance", 8048, 1603210, "2026-07-22 20:00:00", "Charlotte, NC", "Housekeeping", 1, 1, "On", "MARKETPLACE", 981046, "Lattayne Caldwell", "Yes", 15, "Yes", 15, "Yes", "Yes", 5.0, 14, 100.0, 63.0, 15, 0, 0.0, 0, 18.0, "2026-07-22 14:44:26", "2026-07-13 21:36:33", "AUTO_DIRECT_OFFER"], ["SB Yen Management - The Whitehall Hotel", 17926, 1599236, "2026-07-23 7:00:00", "Chicago, IL", "Housekeeping", 2, 2, "On", "MARKETPLACE", 744535, "Angela Warren", "Yes", 3, "Yes", 0, "No", "Yes", 3.33, 6, 80.0, 33.0, 16, 0, 0.0, 0, 4.0, "2026-07-22 6:36:18", "2026-07-19 18:05:27", "AUTO_DIRECT_OFFER"], ["SB Yen Management - The Whitehall Hotel", 17926, 1599236, "2026-07-23 7:00:00", "Chicago, IL", "Housekeeping", 2, 2, "On", "MARKETPLACE", 792246, "Keona Whitehead", "No", 1, "Yes", 1, "Yes", "Yes", 4.32, 44, 96.0, 55.0, 70, 1, 9.0, 0, 1.0, "2026-07-22 16:01:20", "2026-07-09 22:38:58", "AUTO_DIRECT_OFFER"], ["WoodSpring Suites Cedar Park - Austin North", 12740, 1590596, "2026-07-23 7:00:00", "Austin, TX", "Housekeeping", 1, 1, "On", "MARKETPLACE", 616355, "Darrion Gabriel", "Yes", 102, "Yes", 94, "Yes", "Yes", 4.66, 110, 98.0, 42.0, 176, 0, 0.0, 0, 0.0, "2026-07-22 14:02:26", "2026-06-30 22:30:06", "AUTO_DIRECT_OFFER"], ["Parkside Village Retirement Community", 3456, 1609799, "2026-07-23 7:30:00", "Denver, CO", "Housekeeping", 1, 1, "On", "MARKETPLACE", 557594, "Tracey Quin", "Yes", 3, "Yes", 1, "Yes", "Yes", 4.77, 108, 95.0, 50.0, 135, 0, 0.0, 0, 16.0, "2026-07-22 4:23:34", "2026-07-20 16:51:47", "AUTO_DIRECT_OFFER"], ["The Trail Hotel", 16856, 1603489, "2026-07-23 7:30:00", "Louisville, KY", "Housekeeping", 1, 1, "On", "PRIVATE_DIRECT_OFFER", 482360, "Erica Jones", "Yes", 27, "Yes", 25, "Yes", "Yes", 4.9, 223, 100.0, 53.0, 241, 5, 13.0, 0, 0.0, "2026-07-22 13:17:54", "2026-07-14 12:21:18", "STAFFER"], ["Palomino Gardens a Resort Lifestyle Community", 16182, 1604183, "2026-07-23 8:00:00", "Miami, FL", "Housekeeping", 1, 1, "On", "PRIVATE_DIRECT_OFFER", 86073, "Sean Ortiz", "Yes", 10, "Yes", 7, "Yes", "Yes", 4.48, 29, 87.0, 38.0, 27, 3, 14.0, 0, 5.0, "2026-07-21 21:54:13", "2026-07-14 20:41:13", "STAFFER"], ["Sonesta Simply Suites Cleveland North Olmstead Airport", 24076, 1605984, "2026-07-23 8:30:00", "Cleveland, OH", "Housekeeping", 4, 4, "On", "MARKETPLACE", 260679, "Devon Settles", "Yes", 6, "Yes", 3, "Yes", "Yes", 4.86, 443, 98.0, 58.0, 479, 0, 0.0, 0, 18.0, "2026-07-22 10:33:38", "2026-07-19 22:20:05", "AUTO_DIRECT_OFFER"], ["Sonesta Simply Suites Cleveland North Olmstead Airport", 24076, 1605984, "2026-07-23 8:30:00", "Cleveland, OH", "Housekeeping", 4, 4, "On", "MARKETPLACE", 904656, "James Greer", "Yes", 3, "Yes", 2, "Yes", "Yes", 3.63, 8, 88.0, 50.0, 14, 0, 0.0, 0, 14.0, "2026-07-22 13:44:33", "2026-07-16 16:31:34", "AUTO_DIRECT_OFFER"], ["Sonesta Simply Suites Cleveland North Olmstead Airport", 24076, 1605984, "2026-07-23 8:30:00", "Cleveland, OH", "Housekeeping", 4, 4, "On", "MARKETPLACE", 539364, "Marlon Kendrick", "Yes", 25, "Yes", 25, "Yes", "Yes", 4.43, 56, 94.0, 79.0, 62, 0, 0.0, 0, 7.0, "2026-07-22 11:37:11", "2026-07-16 14:51:06", "AUTO_DIRECT_OFFER"], ["Sonesta Simply Suites Cleveland North Olmstead Airport", 24076, 1605984, "2026-07-23 8:30:00", "Cleveland, OH", "Housekeeping", 4, 4, "On", "MARKETPLACE", 603870, "nicole johnson", "Yes", 4, "Yes", 3, "Yes", "Yes", 4.69, 42, 85.0, 58.0, 46, 2, 11.0, 0, 0.0, "2026-07-22 12:25:28", "2026-07-16 14:56:10", "AUTO_DIRECT_OFFER"], ["Symphony Park - Luxury Independent Senior Living Resort", 28100, 1597488, "2026-07-23 8:30:00", "Charlotte, NC", "Housekeeping", 1, 1, "Off", "MARKETPLACE", 72505, "Akayla Cuffie", "Yes", 17, "Yes", 11, "Yes", "Yes", 4.51, 112, 95.0, 46.0, 135, 1, 4.0, 0, 0.0, "2026-07-22 12:36:57", "2026-07-08 15:18:49", "STAFFER"], ["Symphony Park - Luxury Independent Senior Living Resort", 28100, 1604854, "2026-07-23 8:30:00", "Charlotte, NC", "Housekeeping", 1, 1, "Off", "MARKETPLACE", 157467, "Aisha Johnson", "Yes", 11, "Yes", 1, "Yes", "Yes", 4.63, 176, 98.0, 53.0, 189, 2, 11.0, 0, 18.0, "2026-07-22 15:42:06", "2026-07-22 15:42:20", "STAFFER"], ["The Trail Hotel", 16856, 1610399, "2026-07-23 8:30:00", "Louisville, KY", "Housekeeping", 1, 1, "On", "MARKETPLACE", 214025, "mary cook", "No", 3, "Yes", 3, "Yes", "Yes", 4.48, 66, 94.0, 33.0, 61, 6, 33.0, 0, 24.0, "2026-07-22 15:19:48", "2026-07-21 15:06:12", "AUTO_DIRECT_OFFER"], ["Woodspring Suites Savannah Pooler", 18305, 1610387, "2026-07-23 8:30:00", "Savannah, GA / Hilton Head, SC", "Housekeeping", 1, 1, "On", "MARKETPLACE", 323709, "Patricia Heyward", "Yes", 2, "Yes", 1, "Yes", "Yes", 3.5, 2, 100.0, 14.0, 2, 1, 14.0, 0, 0.0, "2026-07-22 15:55:31", "2026-07-21 15:28:15", "AUTO_DIRECT_OFFER"], ["Housekeeping-Seafields at Kiawah Island", 25404, 1591216, "2026-07-23 9:00:00", "Charleston, SC", "Housekeeping", 1, 1, "On", "PRIVATE_DIRECT_OFFER", 412, "Valeree Braz", "Yes", 68, "Yes", 57, "Yes", "Yes", 4.96, 256, 99.0, 50.0, 257, 2, 5.0, 0, 27.0, "2026-07-19 20:59:18", "2026-07-01 16:06:06", "STAFFER"], ["Sonesta Simply Suites Boston Braintree", 24080, 1610958, "2026-07-23 9:00:00", "Boston, MA", "Housekeeping", 1, 1, "On", "MARKETPLACE", 967203, "Dave Laurore", "No", 0, "No", 0, "No", "No", 5.0, 7, 100.0, 10.0, 8, 2, 20.0, 0, 116.0, "2026-07-22 12:52:56", "2026-07-21 21:38:10", "AUTO_DIRECT_OFFER"], ["Sonesta Simply Suites Detroit Ann Arbor", 24075, 1606086, "2026-07-23 9:00:00", "Detroit, MI", "Housekeeping", 5, 7, "On", "MARKETPLACE", 762091, "Amber Towne", "No", 0, "No", 0, "No", "No", 0.0, 0, 0.0, 0.0, 0, 0, 0.0, 0, 38.0, "2026-07-22 15:46:44", "2026-07-21 15:21:39", "ADMIN"], ["Sonesta Simply Suites Detroit Ann Arbor", 24075, 1606086, "2026-07-23 9:00:00", "Detroit, MI", "Housekeeping", 5, 7, "On", "MARKETPLACE", 1007770, "Brianna Siders", "No", 0, "No", 0, "No", "No", 0.0, 0, 0.0, 0.0, 0, 0, 0.0, 0, 43.0, "2026-07-22 16:07:16", "2026-07-22 16:08:03", "ADMIN"], ["Sonesta Simply Suites Detroit Ann Arbor", 24075, 1606086, "2026-07-23 9:00:00", "Detroit, MI", "Housekeeping", 5, 7, "On", "MARKETPLACE", 786983, "Daniela Hixon", "No", 1, "Yes", 1, "Yes", "Yes", 4.14, 7, 100.0, 17.0, 9, 3, 50.0, 0, 36.0, "2026-07-22 13:08:19", "2026-07-19 14:46:03", "STAFFER"], ["Sonesta Simply Suites Detroit Ann Arbor", 24075, 1606086, "2026-07-23 9:00:00", "Detroit, MI", "Housekeeping", 5, 7, "On", "MARKETPLACE", 968935, "Journey White", "No", 0, "No", 0, "No", "No", 0.0, 0, null, 0.0, 0, 0, 0.0, 0, 29.0, "2026-07-22 14:49:15", "2026-07-21 22:17:20", "ADMIN"], ["Sonesta Simply Suites Detroit Ann Arbor", 24075, 1606086, "2026-07-23 9:00:00", "Detroit, MI", "Housekeeping", 5, 7, "On", "MARKETPLACE", 1001618, "Kaden Rice", "No", 0, "No", 0, "No", "No", 0.0, 0, 0.0, 0.0, 0, 0, 0.0, 0, 0.0, "2026-07-22 15:13:15", "2026-07-21 21:29:09", "ADMIN"], ["Sonesta Simply Suites Detroit Ann Arbor", 24075, 1606086, "2026-07-23 9:00:00", "Detroit, MI", "Housekeeping", 5, 7, "On", "MARKETPLACE", 1004484, "Latina Randle", "No", 0, "No", 0, "No", "No", 0.0, 0, 0.0, 0.0, 0, 0, 0.0, 0, 30.0, "2026-07-22 3:55:02", "2026-07-21 18:38:45", "ADMIN"], ["Sonesta Simply Suites Detroit Ann Arbor", 24075, 1606086, "2026-07-23 9:00:00", "Detroit, MI", "Housekeeping", 5, 7, "On", "MARKETPLACE", 816936, "Zipporah Moore", "No", 0, "No", 0, "No", "No", 5.0, 10, 100.0, 0.0, 13, 0, 0.0, 0, 16.0, "2026-07-22 10:20:26", "2026-07-21 22:53:41", "AUTO_DIRECT_OFFER"], ["WoodSpring Suites Cedar Park - Austin North", 12740, 1591119, "2026-07-23 10:00:00", "Austin, TX", "Housekeeping", 3, 3, "On", "MARKETPLACE", 595368, "Jason Coby", "Yes", 14, "Yes", 14, "Yes", "Yes", 4.96, 306, 99.0, 50.0, 361, 0, 0.0, 0, 0.0, "2026-07-21 14:55:33", "2026-07-02 16:26:52", "AUTO_DIRECT_OFFER"], ["WoodSpring Suites Cedar Park - Austin North", 12740, 1591119, "2026-07-23 10:00:00", "Austin, TX", "Housekeeping", 3, 3, "On", "MARKETPLACE", 241499, "Lakeya Pack", "Yes", 21, "Yes", 21, "Yes", "Yes", 4.94, 17, 96.0, 40.0, 24, 0, 0.0, 0, 41.0, "2026-07-22 14:45:31", "2026-07-03 0:07:03", "AUTO_DIRECT_OFFER"], ["WoodSpring Suites Cedar Park - Austin North", 12740, 1591119, "2026-07-23 10:00:00", "Austin, TX", "Housekeeping", 3, 3, "On", "MARKETPLACE", 160839, "Mia Bennett", "Yes", 13, "Yes", 11, "Yes", "Yes", 4.61, 59, 96.0, 31.0, 73, 0, 0.0, 0, 150.0, "2026-07-22 15:09:47", "2026-07-02 19:15:12", "AUTO_DIRECT_OFFER"], ["WoodSpring Suites Cedar Park - Austin North", 12740, 1610307, "2026-07-23 10:00:00", "Austin, TX", "Housekeeping", 1, 1, "On", "MARKETPLACE", 914479, "Cecilia Perez", "Yes", 88, "Yes", 88, "Yes", "Yes", 4.95, 64, 99.0, 77.0, 88, 2, 6.0, 0, 0.0, "2026-07-22 15:10:51", "2026-07-21 2:08:16", "STAFFER"], ["Woodspring Suites Savannah Pooler", 18305, 1584571, "2026-07-23 11:00:00", "Savannah, GA / Hilton Head, SC", "Housekeeping", 2, 1, "On", "MARKETPLACE", 391875, "Mailasha Roberts", "Yes", 17, "Yes", 17, "Yes", "Yes", 3.18, 17, 100.0, 44.0, 15, 2, 5.0, 0, 10.0, "2026-07-22 1:52:31", "2026-07-11 13:19:13", "ADMIN"], ["Brier Creek Country Club NC", 7775, 1584570, "2026-07-23 15:00:00", "Raleigh-Durham, NC", "Housekeeping", 1, 1, "Off", "MARKETPLACE", 518463, "Robert Lee", "Yes", 12, "Yes", 12, "Yes", "Yes", 4.38, 85, 96.0, 78.0, 88, 2, 11.0, 0, 10.0, "2026-07-22 12:59:29", "2026-07-21 15:44:01", "STAFFER"], ["IKEA Costa Mesa - Janitorial", 20423, 1596660, "2026-07-24 6:30:00", "Los Angeles-Long Beach, CA", "Housekeeping", 1, 1, "On", "PRIVATE_DIRECT_OFFER", 631204, "Marcelina Rojas", "Yes", 199, "Yes", 198, "Yes", "Yes", 4.99, 1018, 99.0, 52.0, 1121, 0, 0.0, 0, 5.0, "2026-07-22 16:06:00", "2026-07-07 18:20:54", "STAFFER"], ["SB Yen Management - The Whitehall Hotel", 17926, 1599237, "2026-07-24 7:00:00", "Chicago, IL", "Housekeeping", 2, 2, "On", "MARKETPLACE", 140853, "Jennifer Terry", "No", 0, "No", 0, "No", "No", 4.83, 126, 99.0, 60.0, 143, 0, 0.0, 0, 0.0, "2026-07-22 13:44:24", "2026-07-19 18:25:36", "AUTO_DIRECT_OFFER"], ["SB Yen Management - The Whitehall Hotel", 17926, 1599237, "2026-07-24 7:00:00", "Chicago, IL", "Housekeeping", 2, 2, "On", "MARKETPLACE", 792246, "Keona Whitehead", "No", 1, "Yes", 1, "Yes", "Yes", 4.32, 44, 96.0, 55.0, 70, 1, 9.0, 0, 1.0, "2026-07-22 16:01:20", "2026-07-20 16:32:01", "AUTO_DIRECT_OFFER"], ["WoodSpring Suites Cedar Park - Austin North", 12740, 1590597, "2026-07-24 7:00:00", "Austin, TX", "Housekeeping", 1, 1, "On", "MARKETPLACE", 616355, "Darrion Gabriel", "Yes", 102, "Yes", 94, "Yes", "Yes", 4.66, 110, 98.0, 42.0, 176, 0, 0.0, 0, 0.0, "2026-07-22 14:02:26", "2026-06-30 22:31:09", "AUTO_DIRECT_OFFER"], ["Parkside Village Retirement Community", 3456, 1609800, "2026-07-24 7:30:00", "Denver, CO", "Housekeeping", 1, 1, "On", "MARKETPLACE", 646638, "Brayan Correa", "No", 0, "No", 0, "No", "No", 5.0, 1, 100.0, 30.0, 3, 0, 0.0, 0, 36.0, "2026-07-22 16:05:51", "2026-07-20 17:50:50", "AUTO_DIRECT_OFFER"], ["The Trail Hotel", 16856, 1603490, "2026-07-24 7:30:00", "Louisville, KY", "Housekeeping", 1, 1, "On", "PRIVATE_DIRECT_OFFER", 214025, "mary cook", "No", 3, "Yes", 3, "Yes", "Yes", 4.48, 66, 94.0, 33.0, 61, 6, 33.0, 0, 24.0, "2026-07-22 15:19:48", "2026-07-14 12:22:02", "STAFFER"], ["Palomino Gardens a Resort Lifestyle Community", 16182, 1604184, "2026-07-24 8:00:00", "Miami, FL", "Housekeeping", 1, 1, "On", "PRIVATE_DIRECT_OFFER", 86073, "Sean Ortiz", "Yes", 10, "Yes", 7, "Yes", "Yes", 4.48, 29, 87.0, 38.0, 27, 3, 14.0, 0, 5.0, "2026-07-21 21:54:13", "2026-07-14 20:40:53", "STAFFER"], ["Sonesta Simply Suites Cleveland North Olmstead Airport", 24076, 1605985, "2026-07-24 8:30:00", "Cleveland, OH", "Housekeeping", 4, 4, "On", "MARKETPLACE", 337097, "Daija Walls", "Yes", 50, "Yes", 20, "Yes", "Yes", 4.72, 99, 95.0, 67.0, 100, 2, 8.0, 0, 18.0, "2026-07-22 4:16:49", "2026-07-16 14:46:30", "AUTO_DIRECT_OFFER"], ["Sonesta Simply Suites Cleveland North Olmstead Airport", 24076, 1605985, "2026-07-24 8:30:00", "Cleveland, OH", "Housekeeping", 4, 4, "On", "MARKETPLACE", 904656, "James Greer", "Yes", 3, "Yes", 2, "Yes", "Yes", 3.63, 8, 88.0, 50.0, 14, 0, 0.0, 0, 14.0, "2026-07-22 13:44:33", "2026-07-19 22:25:44", "AUTO_DIRECT_OFFER"], ["Sonesta Simply Suites Cleveland North Olmstead Airport", 24076, 1605985, "2026-07-24 8:30:00", "Cleveland, OH", "Housekeeping", 4, 4, "On", "MARKETPLACE", 539364, "Marlon Kendrick", "Yes", 25, "Yes", 25, "Yes", "Yes", 4.43, 56, 94.0, 79.0, 62, 0, 0.0, 0, 7.0, "2026-07-22 11:37:11", "2026-07-16 14:51:15", "AUTO_DIRECT_OFFER"], ["Sonesta Simply Suites Cleveland North Olmstead Airport", 24076, 1605985, "2026-07-24 8:30:00", "Cleveland, OH", "Housekeeping", 4, 4, "On", "MARKETPLACE", 603870, "nicole johnson", "Yes", 4, "Yes", 3, "Yes", "Yes", 4.69, 42, 85.0, 58.0, 46, 2, 11.0, 0, 0.0, "2026-07-22 12:25:28", "2026-07-16 14:55:50", "AUTO_DIRECT_OFFER"], ["Symphony Park - Luxury Independent Senior Living Resort", 28100, 1597489, "2026-07-24 8:30:00", "Charlotte, NC", "Housekeeping", 1, 1, "Off", "MARKETPLACE", 72505, "Akayla Cuffie", "Yes", 17, "Yes", 11, "Yes", "Yes", 4.51, 112, 95.0, 46.0, 135, 1, 4.0, 0, 0.0, "2026-07-22 12:36:57", "2026-07-08 15:18:54", "STAFFER"], ["The Trail Hotel", 16856, 1608975, "2026-07-24 8:30:00", "Louisville, KY", "Housekeeping", 1, 1, "On", "MARKETPLACE", 482360, "Erica Jones", "Yes", 27, "Yes", 25, "Yes", "Yes", 4.9, 223, 100.0, 53.0, 241, 5, 13.0, 0, 0.0, "2026-07-22 13:17:54", "2026-07-19 12:33:29", "AUTO_DIRECT_OFFER"], ["Woodspring Suites Savannah Pooler", 18305, 1610388, "2026-07-24 8:30:00", "Savannah, GA / Hilton Head, SC", "Housekeeping", 1, 1, "On", "MARKETPLACE", 323709, "Patricia Heyward", "Yes", 2, "Yes", 1, "Yes", "Yes", 3.5, 2, 100.0, 14.0, 2, 1, 14.0, 0, 0.0, "2026-07-22 15:55:31", "2026-07-21 16:45:57", "AUTO_DIRECT_OFFER"], ["Housekeeping-Seafields at Kiawah Island", 25404, 1591217, "2026-07-24 9:00:00", "Charleston, SC", "Housekeeping", 1, 1, "On", "PRIVATE_DIRECT_OFFER", 412, "Valeree Braz", "Yes", 68, "Yes", 57, "Yes", "Yes", 4.96, 256, 99.0, 50.0, 257, 2, 5.0, 0, 27.0, "2026-07-19 20:59:18", "2026-07-01 16:06:10", "STAFFER"], ["Sonesta Simply Suites Boston Braintree", 24080, 1610959, "2026-07-24 9:00:00", "Boston, MA", "Housekeeping", 1, 1, "On", "MARKETPLACE", 694178, "Dondi Willis", "No", 0, "No", 0, "No", "No", 3.83, 6, 89.0, 0.0, 8, 0, 0.0, 0, 0.0, "2026-07-22 15:47:23", "2026-07-22 1:55:14", "AUTO_DIRECT_OFFER"], ["WoodSpring Suites Cedar Park - Austin North", 12740, 1591120, "2026-07-24 10:00:00", "Austin, TX", "Housekeeping", 3, 3, "On", "MARKETPLACE", 595368, "Jason Coby", "Yes", 14, "Yes", 14, "Yes", "Yes", 4.96, 306, 99.0, 50.0, 361, 0, 0.0, 0, 0.0, "2026-07-21 14:55:33", "2026-07-03 18:57:14", "AUTO_DIRECT_OFFER"], ["WoodSpring Suites Cedar Park - Austin North", 12740, 1591120, "2026-07-24 10:00:00", "Austin, TX", "Housekeeping", 3, 3, "On", "MARKETPLACE", 241499, "Lakeya Pack", "Yes", 21, "Yes", 21, "Yes", "Yes", 4.94, 17, 96.0, 40.0, 24, 0, 0.0, 0, 41.0, "2026-07-22 14:45:31", "2026-07-03 15:16:54", "AUTO_DIRECT_OFFER"], ["WoodSpring Suites Cedar Park - Austin North", 12740, 1591120, "2026-07-24 10:00:00", "Austin, TX", "Housekeeping", 3, 3, "On", "MARKETPLACE", 160839, "Mia Bennett", "Yes", 13, "Yes", 11, "Yes", "Yes", 4.61, 59, 96.0, 31.0, 73, 0, 0.0, 0, 150.0, "2026-07-22 15:09:47", "2026-07-02 19:15:38", "AUTO_DIRECT_OFFER"], ["WoodSpring Suites Cedar Park - Austin North", 12740, 1610308, "2026-07-24 10:00:00", "Austin, TX", "Housekeeping", 1, 1, "On", "PRIVATE_DIRECT_OFFER", 914479, "Cecilia Perez", "Yes", 88, "Yes", 88, "Yes", "Yes", 4.95, 64, 99.0, 77.0, 88, 2, 6.0, 0, 0.0, "2026-07-22 15:10:51", "2026-07-21 2:08:28", "STAFFER"], ["Woodspring Suites Savannah Pooler", 18305, 1585960, "2026-07-24 11:00:00", "Savannah, GA / Hilton Head, SC", "Housekeeping", 2, 1, "On", "MARKETPLACE", 762975, "Richard Robinson", "Yes", 1, "Yes", 1, "Yes", "Yes", 4.59, 37, 90.0, 0.0, 35, 0, 0.0, 0, 10.0, "2026-07-22 15:51:49", "2026-07-20 3:02:03", "AUTO_DIRECT_OFFER"], ["IKEA Costa Mesa - Janitorial", 20423, 1596082, "2026-07-24 18:00:00", "Los Angeles-Long Beach, CA", "Housekeeping", 1, 1, "On", "PRIVATE_DIRECT_OFFER", 631204, "Marcelina Rojas", "Yes", 199, "Yes", 198, "Yes", "Yes", 4.99, 1018, 99.0, 52.0, 1121, 0, 0.0, 0, 5.0, "2026-07-22 16:06:00", "2026-07-06 22:02:17", "STAFFER"], ["IKEA Costa Mesa - Janitorial", 20423, 1596645, "2026-07-25 6:30:00", "Los Angeles-Long Beach, CA", "Housekeeping", 1, 1, "On", "PRIVATE_DIRECT_OFFER", 631204, "Marcelina Rojas", "Yes", 199, "Yes", 198, "Yes", "Yes", 4.99, 1018, 99.0, 52.0, 1121, 0, 0.0, 0, 5.0, "2026-07-22 16:06:00", "2026-07-07 18:21:08", "STAFFER"], ["WoodSpring Suites Cedar Park - Austin North", 12740, 1590598, "2026-07-25 7:00:00", "Austin, TX", "Housekeeping", 1, 1, "On", "MARKETPLACE", 616355, "Darrion Gabriel", "Yes", 102, "Yes", 94, "Yes", "Yes", 4.66, 110, 98.0, 42.0, 176, 0, 0.0, 0, 0.0, "2026-07-22 14:02:26", "2026-06-30 22:31:36", "AUTO_DIRECT_OFFER"], ["The Trail Hotel", 16856, 1603491, "2026-07-25 7:30:00", "Louisville, KY", "Housekeeping", 1, 1, "On", "PRIVATE_DIRECT_OFFER", 214025, "mary cook", "No", 3, "Yes", 3, "Yes", "Yes", 4.48, 66, 94.0, 33.0, 61, 6, 33.0, 0, 24.0, "2026-07-22 15:19:48", "2026-07-14 12:21:45", "STAFFER"], ["Woodspring Suites Savannah Pooler", 18305, 1603845, "2026-07-25 8:00:00", "Savannah, GA / Hilton Head, SC", "Housekeeping", 1, 1, "Off", "MARKETPLACE", 391875, "Mailasha Roberts", "Yes", 17, "Yes", 17, "Yes", "Yes", 3.18, 17, 100.0, 44.0, 15, 2, 5.0, 0, 10.0, "2026-07-22 1:52:31", "2026-07-14 18:10:51", "AUTO_DIRECT_OFFER"], ["Sonesta Simply Suites Cleveland North Olmstead Airport", 24076, 1605986, "2026-07-25 8:30:00", "Cleveland, OH", "Housekeeping", 4, 4, "On", "MARKETPLACE", 260679, "Devon Settles", "Yes", 6, "Yes", 3, "Yes", "Yes", 4.86, 443, 98.0, 58.0, 479, 0, 0.0, 0, 18.0, "2026-07-22 10:33:38", "2026-07-16 16:33:12", "AUTO_DIRECT_OFFER"], ["Sonesta Simply Suites Cleveland North Olmstead Airport", 24076, 1605986, "2026-07-25 8:30:00", "Cleveland, OH", "Housekeeping", 4, 4, "On", "MARKETPLACE", 904656, "James Greer", "Yes", 3, "Yes", 2, "Yes", "Yes", 3.63, 8, 88.0, 50.0, 14, 0, 0.0, 0, 14.0, "2026-07-22 13:44:33", "2026-07-16 15:46:45", "AUTO_DIRECT_OFFER"], ["Sonesta Simply Suites Cleveland North Olmstead Airport", 24076, 1605986, "2026-07-25 8:30:00", "Cleveland, OH", "Housekeeping", 4, 4, "On", "MARKETPLACE", 991082, "Joanne Yusko", "No", 0, "No", 0, "No", "No", 5.0, 2, 100.0, 50.0, 2, 0, 0.0, 0, 10.0, "2026-07-22 11:52:45", "2026-07-19 22:29:46", "AUTO_DIRECT_OFFER"], ["Sonesta Simply Suites Cleveland North Olmstead Airport", 24076, 1605986, "2026-07-25 8:30:00", "Cleveland, OH", "Housekeeping", 4, 4, "On", "MARKETPLACE", 539364, "Marlon Kendrick", "Yes", 25, "Yes", 25, "Yes", "Yes", 4.43, 56, 94.0, 79.0, 62, 0, 0.0, 0, 7.0, "2026-07-22 11:37:11", "2026-07-16 14:51:31", "AUTO_DIRECT_OFFER"], ["Sonesta Simply Suites Detroit Ann Arbor", 24075, 1609050, "2026-07-25 9:00:00", "Detroit, MI", "Housekeeping", 4, 7, "On", "MARKETPLACE", 762091, "Amber Towne", "No", 0, "No", 0, "No", "No", 0.0, 0, 0.0, 0.0, 0, 0, 0.0, 0, 38.0, "2026-07-22 15:46:44", "2026-07-21 15:38:28", "ADMIN"], ["Sonesta Simply Suites Detroit Ann Arbor", 24075, 1609050, "2026-07-25 9:00:00", "Detroit, MI", "Housekeeping", 4, 7, "On", "MARKETPLACE", 1007770, "Brianna Siders", "No", 0, "No", 0, "No", "No", 0.0, 0, 0.0, 0.0, 0, 0, 0.0, 0, 43.0, "2026-07-22 16:07:16", "2026-07-21 13:35:04", "ADMIN"], ["Sonesta Simply Suites Detroit Ann Arbor", 24075, 1609050, "2026-07-25 9:00:00", "Detroit, MI", "Housekeeping", 4, 7, "On", "MARKETPLACE", 786983, "Daniela Hixon", "No", 1, "Yes", 1, "Yes", "Yes", 4.14, 7, 100.0, 17.0, 9, 3, 50.0, 0, 36.0, "2026-07-22 13:08:19", "2026-07-19 14:46:12", "STAFFER"], ["Sonesta Simply Suites Detroit Ann Arbor", 24075, 1609050, "2026-07-25 9:00:00", "Detroit, MI", "Housekeeping", 4, 7, "On", "MARKETPLACE", 982031, "Destiny Thomas", "No", 0, "No", 0, "No", "No", 0.0, 0, 0.0, 0.0, 0, 1, 50.0, 0, 31.0, "2026-07-22 14:43:11", "2026-07-22 2:51:53", "ADMIN"], ["Sonesta Simply Suites Detroit Ann Arbor", 24075, 1609050, "2026-07-25 9:00:00", "Detroit, MI", "Housekeeping", 4, 7, "On", "MARKETPLACE", 1005554, "Ison Reid", "No", 0, "No", 0, "No", "No", 0.0, 0, 0.0, 0.0, 0, 0, 0.0, 0, 0.0, "2026-07-22 12:52:05", "2026-07-21 21:14:39", "ADMIN"], ["Sonesta Simply Suites Detroit Ann Arbor", 24075, 1609050, "2026-07-25 9:00:00", "Detroit, MI", "Housekeeping", 4, 7, "On", "MARKETPLACE", 783221, "Keyana Broughton-Bailey", "Yes", 2, "Yes", 0, "No", "Yes", 4.14, 7, 100.0, 0.0, 9, 0, 0.0, 0, 32.0, "2026-07-22 14:53:28", "2026-07-20 0:35:36", "AUTO_DIRECT_OFFER"], ["Sonesta Simply Suites Detroit Ann Arbor", 24075, 1609050, "2026-07-25 9:00:00", "Detroit, MI", "Housekeeping", 4, 7, "On", "MARKETPLACE", 1004484, "Latina Randle", "No", 0, "No", 0, "No", "No", 0.0, 0, 0.0, 0.0, 0, 0, 0.0, 0, 30.0, "2026-07-22 3:55:02", "2026-07-22 2:50:47", "ADMIN"], ["Housekeeping-Seafields at Kiawah Island", 25404, 1591225, "2026-07-25 9:30:00", "Charleston, SC", "Housekeeping", 1, 1, "On", "PRIVATE_DIRECT_OFFER", 412, "Valeree Braz", "Yes", 68, "Yes", 57, "Yes", "Yes", 4.96, 256, 99.0, 50.0, 257, 2, 5.0, 0, 27.0, "2026-07-19 20:59:18", "2026-07-01 16:06:48", "STAFFER"], ["WoodSpring Suites Cedar Park - Austin North", 12740, 1591121, "2026-07-25 10:00:00", "Austin, TX", "Housekeeping", 3, 3, "On", "MARKETPLACE", 765806, "Christopher White", "Yes", 6, "Yes", 6, "Yes", "Yes", 4.86, 49, 99.0, 69.0, 73, 0, 0.0, 0, 73.0, "2026-07-22 14:10:14", "2026-07-04 15:06:23", "AUTO_DIRECT_OFFER"], ["WoodSpring Suites Cedar Park - Austin North", 12740, 1591121, "2026-07-25 10:00:00", "Austin, TX", "Housekeeping", 3, 3, "On", "MARKETPLACE", 241499, "Lakeya Pack", "Yes", 21, "Yes", 21, "Yes", "Yes", 4.94, 17, 96.0, 40.0, 24, 0, 0.0, 0, 41.0, "2026-07-22 14:45:31", "2026-07-04 15:18:26", "AUTO_DIRECT_OFFER"], ["WoodSpring Suites Cedar Park - Austin North", 12740, 1591121, "2026-07-25 10:00:00", "Austin, TX", "Housekeeping", 3, 3, "On", "MARKETPLACE", 160839, "Mia Bennett", "Yes", 13, "Yes", 11, "Yes", "Yes", 4.61, 59, 96.0, 31.0, 73, 0, 0.0, 0, 150.0, "2026-07-22 15:09:47", "2026-07-02 19:15:19", "AUTO_DIRECT_OFFER"], ["WoodSpring Suites Cedar Park - Austin North", 12740, 1610309, "2026-07-25 10:00:00", "Austin, TX", "Housekeeping", 1, 1, "On", "PRIVATE_DIRECT_OFFER", 914479, "Cecilia Perez", "Yes", 88, "Yes", 88, "Yes", "Yes", 4.95, 64, 99.0, 77.0, 88, 2, 6.0, 0, 0.0, "2026-07-22 15:10:51", "2026-07-21 2:08:37", "STAFFER"], ["Trader Todd’s", 18030, 1609325, "2026-07-25 11:00:00", "Chicago, IL", "Housekeeping", 2, 2, "On", "MARKETPLACE", 46181, "Claudia Katz", "No", 0, "No", 0, "No", "No", 4.51, 35, 84.0, 38.0, 38, 0, 0.0, 0, 1.0, "2026-07-22 16:06:50", "2026-07-21 17:07:57", "AUTO_DIRECT_OFFER"], ["Trader Todd’s", 18030, 1609325, "2026-07-25 11:00:00", "Chicago, IL", "Housekeeping", 2, 2, "On", "MARKETPLACE", 871413, "Robin Turnage", "Yes", 5, "Yes", 0, "No", "Yes", 3.67, 3, 100.0, 29.0, 9, 0, 0.0, 0, 6.0, "2026-07-22 15:17:00", "2026-07-19 21:15:50", "AUTO_DIRECT_OFFER"], ["IKEA Costa Mesa - Janitorial", 20423, 1596646, "2026-07-25 18:00:00", "Los Angeles-Long Beach, CA", "Housekeeping", 1, 1, "On", "PRIVATE_DIRECT_OFFER", 631204, "Marcelina Rojas", "Yes", 199, "Yes", 198, "Yes", "Yes", 4.99, 1018, 99.0, 52.0, 1121, 0, 0.0, 0, 5.0, "2026-07-22 16:06:00", "2026-07-07 18:21:15", "STAFFER"], ["IKEA Costa Mesa - Janitorial", 20423, 1596647, "2026-07-26 6:30:00", "Los Angeles-Long Beach, CA", "Housekeeping", 1, 1, "On", "PRIVATE_DIRECT_OFFER", 631204, "Marcelina Rojas", "Yes", 199, "Yes", 198, "Yes", "Yes", 4.99, 1018, 99.0, 52.0, 1121, 0, 0.0, 0, 5.0, "2026-07-22 16:06:00", "2026-07-07 18:21:22", "STAFFER"], ["WoodSpring Suites Cedar Park - Austin North", 12740, 1590599, "2026-07-26 7:00:00", "Austin, TX", "Housekeeping", 1, 1, "On", "MARKETPLACE", 616355, "Darrion Gabriel", "Yes", 102, "Yes", 94, "Yes", "Yes", 4.66, 110, 98.0, 42.0, 176, 0, 0.0, 0, 0.0, "2026-07-22 14:02:26", "2026-06-30 22:31:57", "AUTO_DIRECT_OFFER"], ["The Trail Hotel", 16856, 1603492, "2026-07-26 7:30:00", "Louisville, KY", "Housekeeping", 1, 1, "On", "PRIVATE_DIRECT_OFFER", 895800, "Karen Webster", "Yes", 4, "Yes", 4, "Yes", "Yes", 4.8, 5, 100.0, 63.0, 4, 1, 13.0, 0, 36.0, "2026-07-22 14:40:28", "2026-07-19 20:45:17", "STAFFER"], ["Sonesta Simply Suites Cleveland North Olmstead Airport", 24076, 1608578, "2026-07-26 8:30:00", "Cleveland, OH", "Housekeeping", 4, 4, "On", "MARKETPLACE", 337097, "Daija Walls", "Yes", 50, "Yes", 20, "Yes", "Yes", 4.72, 99, 95.0, 67.0, 100, 2, 8.0, 0, 18.0, "2026-07-22 4:16:49", "2026-07-18 19:27:24", "AUTO_DIRECT_OFFER"], ["Sonesta Simply Suites Cleveland North Olmstead Airport", 24076, 1608578, "2026-07-26 8:30:00", "Cleveland, OH", "Housekeeping", 4, 4, "On", "MARKETPLACE", 904656, "James Greer", "Yes", 3, "Yes", 2, "Yes", "Yes", 3.63, 8, 88.0, 50.0, 14, 0, 0.0, 0, 14.0, "2026-07-22 13:44:33", "2026-07-18 19:46:16", "AUTO_DIRECT_OFFER"], ["Sonesta Simply Suites Cleveland North Olmstead Airport", 24076, 1608578, "2026-07-26 8:30:00", "Cleveland, OH", "Housekeeping", 4, 4, "On", "MARKETPLACE", 539364, "Marlon Kendrick", "Yes", 25, "Yes", 25, "Yes", "Yes", 4.43, 56, 94.0, 79.0, 62, 0, 0.0, 0, 7.0, "2026-07-22 11:37:11", "2026-07-18 19:51:27", "AUTO_DIRECT_OFFER"], ["Sonesta Simply Suites Cleveland North Olmstead Airport", 24076, 1608578, "2026-07-26 8:30:00", "Cleveland, OH", "Housekeeping", 4, 4, "On", "MARKETPLACE", 603870, "nicole johnson", "Yes", 4, "Yes", 3, "Yes", "Yes", 4.69, 42, 85.0, 58.0, 46, 2, 11.0, 0, 0.0, "2026-07-22 12:25:28", "2026-07-18 19:36:36", "AUTO_DIRECT_OFFER"], ["Sonesta Simply Suites Detroit Ann Arbor", 24075, 1606066, "2026-07-26 9:00:00", "Detroit, MI", "Housekeeping", 4, 4, "On", "MARKETPLACE", 765579, "Glynis Tabor", "No", 0, "No", 0, "No", "No", 4.67, 21, 92.0, 0.0, 22, 3, 60.0, 0, 36.0, "2026-07-21 20:49:21", "2026-07-16 20:16:59", "AUTO_DIRECT_OFFER"], ["Sonesta Simply Suites Detroit Ann Arbor", 24075, 1606066, "2026-07-26 9:00:00", "Detroit, MI", "Housekeeping", 4, 4, "On", "MARKETPLACE", 877459, "Lyrix Cabrera", "No", 0, "No", 0, "No", "No", 4.83, 6, 86.0, 0.0, 6, 6, 86.0, 0, 7.0, "2026-07-21 21:10:58", "2026-07-16 20:43:40", "AUTO_DIRECT_OFFER"], ["Sonesta Simply Suites Detroit Ann Arbor", 24075, 1606066, "2026-07-26 9:00:00", "Detroit, MI", "Housekeeping", 4, 4, "On", "MARKETPLACE", 908177, "Moussa Diabate", "Yes", 1, "Yes", 1, "Yes", "Yes", 4.5, 2, 100.0, 17.0, 3, 1, 17.0, 0, 29.0, "2026-07-22 11:33:25", "2026-07-17 15:36:18", "AUTO_DIRECT_OFFER"], ["Sonesta Simply Suites Detroit Ann Arbor", 24075, 1606066, "2026-07-26 9:00:00", "Detroit, MI", "Housekeeping", 4, 4, "On", "MARKETPLACE", 816936, "Zipporah Moore", "No", 0, "No", 0, "No", "No", 5.0, 10, 100.0, 0.0, 13, 0, 0.0, 0, 16.0, "2026-07-22 10:20:26", "2026-07-21 22:59:27", "AUTO_DIRECT_OFFER"], ["The Trail Hotel", 16856, 1609328, "2026-07-26 9:00:00", "Louisville, KY", "Housekeeping", 1, 1, "On", "MARKETPLACE", 482360, "Erica Jones", "Yes", 27, "Yes", 25, "Yes", "Yes", 4.9, 223, 100.0, 53.0, 241, 5, 13.0, 0, 0.0, "2026-07-22 13:17:54", "2026-07-19 21:11:25", "AUTO_DIRECT_OFFER"], ["Housekeeping-Seafields at Kiawah Island", 25404, 1591226, "2026-07-26 9:30:00", "Charleston, SC", "Housekeeping", 1, 1, "On", "PRIVATE_DIRECT_OFFER", 412, "Valeree Braz", "Yes", 68, "Yes", 57, "Yes", "Yes", 4.96, 256, 99.0, 50.0, 257, 2, 5.0, 0, 27.0, "2026-07-19 20:59:18", "2026-07-01 16:06:52", "STAFFER"], ["WoodSpring Suites Cedar Park - Austin North", 12740, 1591122, "2026-07-26 10:00:00", "Austin, TX", "Housekeeping", 3, 3, "On", "MARKETPLACE", 765806, "Christopher White", "Yes", 6, "Yes", 6, "Yes", "Yes", 4.86, 49, 99.0, 69.0, 73, 0, 0.0, 0, 73.0, "2026-07-22 14:10:14", "2026-07-05 15:05:19", "AUTO_DIRECT_OFFER"], ["WoodSpring Suites Cedar Park - Austin North", 12740, 1591122, "2026-07-26 10:00:00", "Austin, TX", "Housekeeping", 3, 3, "On", "MARKETPLACE", 241499, "Lakeya Pack", "Yes", 21, "Yes", 21, "Yes", "Yes", 4.94, 17, 96.0, 40.0, 24, 0, 0.0, 0, 41.0, "2026-07-22 14:45:31", "2026-07-05 16:02:22", "AUTO_DIRECT_OFFER"], ["WoodSpring Suites Cedar Park - Austin North", 12740, 1591122, "2026-07-26 10:00:00", "Austin, TX", "Housekeeping", 3, 3, "On", "MARKETPLACE", 160839, "Mia Bennett", "Yes", 13, "Yes", 11, "Yes", "Yes", 4.61, 59, 96.0, 31.0, 73, 0, 0.0, 0, 150.0, "2026-07-22 15:09:47", "2026-07-02 19:16:19", "AUTO_DIRECT_OFFER"], ["Trader Todd’s", 18030, 1609326, "2026-07-26 11:00:00", "Chicago, IL", "Housekeeping", 2, 2, "On", "MARKETPLACE", 744535, "Angela Warren", "Yes", 3, "Yes", 1, "Yes", "Yes", 3.33, 6, 80.0, 33.0, 16, 0, 0.0, 0, 5.0, "2026-07-22 6:36:18", "2026-07-19 21:26:07", "AUTO_DIRECT_OFFER"], ["Trader Todd’s", 18030, 1609326, "2026-07-26 11:00:00", "Chicago, IL", "Housekeeping", 2, 2, "On", "MARKETPLACE", 871413, "Robin Turnage", "Yes", 5, "Yes", 0, "No", "Yes", 3.67, 3, 100.0, 29.0, 9, 0, 0.0, 0, 6.0, "2026-07-22 15:17:00", "2026-07-19 21:17:52", "AUTO_DIRECT_OFFER"], ["Woodspring Suites Savannah Pooler", 18305, 1587997, "2026-07-26 11:00:00", "Savannah, GA / Hilton Head, SC", "Housekeeping", 1, 1, "On", "MARKETPLACE", 487403, "Racsheen Jackson", "Yes", 10, "Yes", 10, "Yes", "Yes", 4.17, 53, 96.0, 60.0, 52, 1, 10.0, 0, 11.0, "2026-07-21 15:21:08", "2026-07-20 2:02:54", "AUTO_DIRECT_OFFER"], ["IKEA Costa Mesa - Janitorial", 20423, 1596648, "2026-07-26 18:00:00", "Los Angeles-Long Beach, CA", "Housekeeping", 1, 1, "On", "PRIVATE_DIRECT_OFFER", 631204, "Marcelina Rojas", "Yes", 199, "Yes", 198, "Yes", "Yes", 4.99, 1018, 99.0, 52.0, 1121, 0, 0.0, 0, 5.0, "2026-07-22 16:06:00", "2026-07-07 18:21:32", "STAFFER"], ["Rocket Science Cleaning", 25671, 1601067, "2026-07-27 4:30:00", "Nashville, TN", "Housekeeping", 1, 1, "Off", "MARKETPLACE", 132995, "Akili McDonald", "No", 1, "Yes", 0, "No", "Yes", 4.91, 467, 99.0, 38.0, 519, 4, 31.0, 0, 14.0, "2026-07-22 13:23:18", "2026-07-15 15:51:40", "STAFFER"], ["IKEA Costa Mesa - Janitorial", 20423, 1596649, "2026-07-27 6:30:00", "Los Angeles-Long Beach, CA", "Housekeeping", 1, 1, "On", "PRIVATE_DIRECT_OFFER", 631204, "Marcelina Rojas", "Yes", 199, "Yes", 198, "Yes", "Yes", 4.99, 1018, 99.0, 52.0, 1121, 0, 0.0, 0, 5.0, "2026-07-22 16:06:00", "2026-07-07 18:21:39", "STAFFER"], ["WoodSpring Suites Cedar Park - Austin North", 12740, 1590600, "2026-07-27 7:00:00", "Austin, TX", "Housekeeping", 1, 1, "On", "MARKETPLACE", 241499, "Lakeya Pack", "Yes", 21, "Yes", 21, "Yes", "Yes", 4.94, 17, 96.0, 40.0, 24, 0, 0.0, 0, 41.0, "2026-07-22 14:45:31", "2026-07-06 12:16:00", "AUTO_DIRECT_OFFER"], ["The Trail Hotel", 16856, 1603493, "2026-07-27 7:30:00", "Louisville, KY", "Housekeeping", 1, 1, "On", "PRIVATE_DIRECT_OFFER", 482360, "Erica Jones", "Yes", 27, "Yes", 25, "Yes", "Yes", 4.9, 223, 100.0, 53.0, 241, 5, 13.0, 0, 0.0, "2026-07-22 13:17:54", "2026-07-14 12:23:58", "STAFFER"], ["Palomino Gardens a Resort Lifestyle Community", 16182, 1609105, "2026-07-27 8:00:00", "Miami, FL", "Housekeeping", 1, 1, "On", "PRIVATE_DIRECT_OFFER", 86073, "Sean Ortiz", "Yes", 10, "Yes", 7, "Yes", "Yes", 4.48, 29, 87.0, 38.0, 27, 3, 14.0, 0, 5.0, "2026-07-21 21:54:13", "2026-07-19 17:46:51", "STAFFER"], ["Symphony Park - Luxury Independent Senior Living Resort", 28100, 1604871, "2026-07-27 8:30:00", "Charlotte, NC", "Housekeeping", 1, 1, "Off", "MARKETPLACE", 157467, "Aisha Johnson", "Yes", 11, "Yes", 1, "Yes", "Yes", 4.63, 176, 98.0, 53.0, 189, 2, 11.0, 0, 18.0, "2026-07-22 15:42:06", "2026-07-15 16:35:49", "STAFFER"], ["Symphony Park - Luxury Independent Senior Living Resort", 28100, 1610749, "2026-07-27 8:30:00", "Charlotte, NC", "Housekeeping", 1, 1, "Off", "MARKETPLACE", 72505, "Akayla Cuffie", "Yes", 17, "Yes", 11, "Yes", "Yes", 4.51, 112, 95.0, 46.0, 135, 1, 4.0, 0, 0.0, "2026-07-22 12:36:57", "2026-07-21 18:52:47", "STAFFER"], ["Housekeeping-Seafields at Kiawah Island", 25404, 1591218, "2026-07-27 9:00:00", "Charleston, SC", "Housekeeping", 1, 1, "On", "PRIVATE_DIRECT_OFFER", 412, "Valeree Braz", "Yes", 68, "Yes", 57, "Yes", "Yes", 4.96, 256, 99.0, 50.0, 257, 2, 5.0, 0, 27.0, "2026-07-19 20:59:18", "2026-07-01 16:06:15", "STAFFER"], ["Sonesta Simply Suites Plano Frisco", 24084, 1588597, "2026-07-27 10:00:00", "Dallas, TX", "Housekeeping", 1, 1, "On", "MARKETPLACE", 424467, "Jason Woods", "Yes", 35, "Yes", 33, "Yes", "Yes", 4.78, 45, 98.0, 38.0, 47, 0, 0.0, 0, 14.0, "2026-07-22 15:40:30", "2026-06-29 0:04:47", "AUTO_DIRECT_OFFER"], ["WoodSpring Suites Cedar Park - Austin North", 12740, 1590570, "2026-07-27 10:00:00", "Austin, TX", "Housekeeping", 3, 3, "On", "MARKETPLACE", 616355, "Darrion Gabriel", "Yes", 102, "Yes", 94, "Yes", "Yes", 4.66, 110, 98.0, 42.0, 176, 0, 0.0, 0, 0.0, "2026-07-22 14:02:26", "2026-06-30 22:23:04", "AUTO_DIRECT_OFFER"], ["WoodSpring Suites Cedar Park - Austin North", 12740, 1590570, "2026-07-27 10:00:00", "Austin, TX", "Housekeeping", 3, 3, "On", "MARKETPLACE", 595368, "Jason Coby", "Yes", 14, "Yes", 14, "Yes", "Yes", 4.96, 306, 99.0, 50.0, 361, 0, 0.0, 0, 0.0, "2026-07-21 14:55:33", "2026-07-06 16:08:31", "AUTO_DIRECT_OFFER"], ["WoodSpring Suites Cedar Park - Austin North", 12740, 1590570, "2026-07-27 10:00:00", "Austin, TX", "Housekeeping", 3, 3, "On", "MARKETPLACE", 160839, "Mia Bennett", "Yes", 13, "Yes", 11, "Yes", "Yes", 4.61, 59, 96.0, 31.0, 73, 0, 0.0, 0, 150.0, "2026-07-22 15:09:47", "2026-06-30 22:40:56", "AUTO_DIRECT_OFFER"], ["Woodspring Suites Savannah Pooler", 18305, 1588609, "2026-07-27 11:00:00", "Savannah, GA / Hilton Head, SC", "Housekeeping", 1, 1, "On", "MARKETPLACE", 732466, "Schyvonne Clare", "Yes", 18, "Yes", 15, "Yes", "Yes", 4.75, 161, 98.0, 33.0, 161, 26, 36.0, 0, 1.0, "2026-07-22 14:04:36", "2026-06-29 0:00:31", "AUTO_DIRECT_OFFER"], ["IKEA Costa Mesa - Janitorial", 20423, 1596651, "2026-07-28 6:30:00", "Los Angeles-Long Beach, CA", "Housekeeping", 1, 1, "On", "PRIVATE_DIRECT_OFFER", 631204, "Marcelina Rojas", "Yes", 199, "Yes", 198, "Yes", "Yes", 4.99, 1018, 99.0, 52.0, 1121, 0, 0.0, 0, 5.0, "2026-07-22 16:06:00", "2026-07-07 18:21:45", "STAFFER"], ["WoodSpring Suites Cedar Park - Austin North", 12740, 1590601, "2026-07-28 7:00:00", "Austin, TX", "Housekeeping", 1, 1, "On", "MARKETPLACE", 595368, "Jason Coby", "Yes", 14, "Yes", 14, "Yes", "Yes", 4.96, 306, 99.0, 50.0, 361, 0, 0.0, 0, 0.0, "2026-07-21 14:55:33", "2026-07-07 12:05:18", "AUTO_DIRECT_OFFER"], ["The Trail Hotel", 16856, 1603494, "2026-07-28 7:30:00", "Louisville, KY", "Housekeeping", 1, 1, "On", "PRIVATE_DIRECT_OFFER", 214025, "mary cook", "No", 3, "Yes", 3, "Yes", "Yes", 4.48, 66, 94.0, 33.0, 61, 6, 33.0, 0, 24.0, "2026-07-22 15:19:48", "2026-07-14 12:21:21", "STAFFER"], ["Palomino Gardens a Resort Lifestyle Community", 16182, 1609106, "2026-07-28 8:00:00", "Miami, FL", "Housekeeping", 1, 1, "On", "PRIVATE_DIRECT_OFFER", 86073, "Sean Ortiz", "Yes", 10, "Yes", 7, "Yes", "Yes", 4.48, 29, 87.0, 38.0, 27, 3, 14.0, 0, 5.0, "2026-07-21 21:54:13", "2026-07-19 17:48:06", "STAFFER"], ["The Trail Hotel", 16856, 1609948, "2026-07-28 8:00:00", "Louisville, KY", "Housekeeping", 1, 1, "On", "MARKETPLACE", 482360, "Erica Jones", "Yes", 27, "Yes", 25, "Yes", "Yes", 4.9, 223, 100.0, 53.0, 241, 5, 13.0, 0, 0.0, "2026-07-22 13:17:54", "2026-07-20 18:14:24", "AUTO_DIRECT_OFFER"], ["Woodspring Suites Savannah Pooler", 18305, 1597909, "2026-07-28 8:00:00", "Savannah, GA / Hilton Head, SC", "Housekeeping", 1, 1, "On", "MARKETPLACE", 391875, "Mailasha Roberts", "Yes", 17, "Yes", 17, "Yes", "Yes", 3.18, 17, 100.0, 44.0, 15, 2, 5.0, 0, 10.0, "2026-07-22 1:52:31", "2026-07-16 19:21:08", "AUTO_DIRECT_OFFER"], ["Symphony Park - Luxury Independent Senior Living Resort", 28100, 1604873, "2026-07-28 8:30:00", "Charlotte, NC", "Housekeeping", 1, 1, "Off", "MARKETPLACE", 72505, "Akayla Cuffie", "Yes", 17, "Yes", 11, "Yes", "Yes", 4.51, 112, 95.0, 46.0, 135, 1, 4.0, 0, 0.0, "2026-07-22 12:36:57", "2026-07-21 11:51:21", "STAFFER"], ["Housekeeping-Seafields at Kiawah Island", 25404, 1591219, "2026-07-28 9:00:00", "Charleston, SC", "Housekeeping", 1, 1, "On", "PRIVATE_DIRECT_OFFER", 412, "Valeree Braz", "Yes", 68, "Yes", 57, "Yes", "Yes", 4.96, 256, 99.0, 50.0, 257, 2, 5.0, 0, 27.0, "2026-07-19 20:59:18", "2026-07-01 16:05:26", "STAFFER"], ["WoodSpring Suites Cedar Park - Austin North", 12740, 1590571, "2026-07-28 10:00:00", "Austin, TX", "Housekeeping", 3, 3, "On", "MARKETPLACE", 616355, "Darrion Gabriel", "Yes", 102, "Yes", 94, "Yes", "Yes", 4.66, 110, 98.0, 42.0, 176, 0, 0.0, 0, 0.0, "2026-07-22 14:02:26", "2026-06-30 22:22:55", "AUTO_DIRECT_OFFER"], ["WoodSpring Suites Cedar Park - Austin North", 12740, 1590571, "2026-07-28 10:00:00", "Austin, TX", "Housekeeping", 3, 3, "On", "MARKETPLACE", 241499, "Lakeya Pack", "Yes", 21, "Yes", 21, "Yes", "Yes", 4.94, 17, 96.0, 40.0, 24, 0, 0.0, 0, 41.0, "2026-07-22 14:45:31", "2026-07-07 15:12:00", "AUTO_DIRECT_OFFER"], ["WoodSpring Suites Cedar Park - Austin North", 12740, 1590571, "2026-07-28 10:00:00", "Austin, TX", "Housekeeping", 3, 3, "On", "MARKETPLACE", 160839, "Mia Bennett", "Yes", 13, "Yes", 11, "Yes", "Yes", 4.61, 59, 96.0, 31.0, 73, 0, 0.0, 0, 150.0, "2026-07-22 15:09:47", "2026-06-30 22:41:01", "AUTO_DIRECT_OFFER"], ["The Peninsula Club Maintenance", 8048, 1603215, "2026-07-28 20:00:00", "Charlotte, NC", "Housekeeping", 1, 1, "On", "MARKETPLACE", 981046, "Lattayne Caldwell", "Yes", 15, "Yes", 15, "Yes", "Yes", 5.0, 14, 100.0, 63.0, 15, 0, 0.0, 0, 18.0, "2026-07-22 14:44:26", "2026-07-13 21:37:12", "AUTO_DIRECT_OFFER"], ["WoodSpring Suites Cedar Park - Austin North", 12740, 1590722, "2026-07-29 7:00:00", "Austin, TX", "Housekeeping", 1, 1, "On", "MARKETPLACE", 595368, "Jason Coby", "Yes", 14, "Yes", 14, "Yes", "Yes", 4.96, 306, 99.0, 50.0, 361, 0, 0.0, 0, 0.0, "2026-07-21 14:55:33", "2026-07-08 12:05:35", "AUTO_DIRECT_OFFER"], ["The Trail Hotel", 16856, 1603495, "2026-07-29 7:30:00", "Louisville, KY", "Housekeeping", 1, 1, "On", "PRIVATE_DIRECT_OFFER", 214025, "mary cook", "No", 3, "Yes", 3, "Yes", "Yes", 4.48, 66, 94.0, 33.0, 61, 6, 33.0, 0, 24.0, "2026-07-22 15:19:48", "2026-07-14 12:21:34", "STAFFER"], ["Palomino Gardens a Resort Lifestyle Community", 16182, 1609107, "2026-07-29 8:00:00", "Miami, FL", "Housekeeping", 1, 1, "On", "PRIVATE_DIRECT_OFFER", 86073, "Sean Ortiz", "Yes", 10, "Yes", 7, "Yes", "Yes", 4.48, 29, 87.0, 38.0, 27, 3, 14.0, 0, 5.0, "2026-07-21 21:54:13", "2026-07-19 17:48:11", "STAFFER"], ["Woodspring Suites Savannah Pooler", 18305, 1597910, "2026-07-29 8:00:00", "Savannah, GA / Hilton Head, SC", "Housekeeping", 1, 1, "On", "MARKETPLACE", 391875, "Mailasha Roberts", "Yes", 17, "Yes", 17, "Yes", "Yes", 3.18, 17, 100.0, 44.0, 15, 2, 5.0, 0, 10.0, "2026-07-22 1:52:31", "2026-07-16 19:21:18", "AUTO_DIRECT_OFFER"], ["Symphony Park - Luxury Independent Senior Living Resort", 28100, 1604874, "2026-07-29 8:30:00", "Charlotte, NC", "Housekeeping", 1, 1, "Off", "MARKETPLACE", 157467, "Aisha Johnson", "Yes", 11, "Yes", 1, "Yes", "Yes", 4.63, 176, 98.0, 53.0, 189, 2, 11.0, 0, 18.0, "2026-07-22 15:42:06", "2026-07-15 16:35:59", "STAFFER"], ["Symphony Park - Luxury Independent Senior Living Resort", 28100, 1610753, "2026-07-29 8:30:00", "Charlotte, NC", "Housekeeping", 1, 1, "Off", "MARKETPLACE", 72505, "Akayla Cuffie", "Yes", 17, "Yes", 11, "Yes", "Yes", 4.51, 112, 95.0, 46.0, 135, 1, 4.0, 0, 0.0, "2026-07-22 12:36:57", "2026-07-21 18:52:51", "STAFFER"], ["The Trail Hotel", 16856, 1609951, "2026-07-29 8:30:00", "Louisville, KY", "Housekeeping", 1, 1, "On", "MARKETPLACE", 482360, "Erica Jones", "Yes", 27, "Yes", 25, "Yes", "Yes", 4.9, 223, 100.0, 53.0, 241, 5, 13.0, 0, 0.0, "2026-07-22 13:17:54", "2026-07-20 18:14:58", "AUTO_DIRECT_OFFER"], ["Housekeeping-Seafields at Kiawah Island", 25404, 1591220, "2026-07-29 9:00:00", "Charleston, SC", "Housekeeping", 1, 1, "On", "PRIVATE_DIRECT_OFFER", 412, "Valeree Braz", "Yes", 68, "Yes", 57, "Yes", "Yes", 4.96, 256, 99.0, 50.0, 257, 2, 5.0, 0, 27.0, "2026-07-19 20:59:18", "2026-07-01 16:06:19", "STAFFER"], ["WoodSpring Suites Cedar Park - Austin North", 12740, 1590716, "2026-07-29 10:00:00", "Austin, TX", "Housekeeping", 3, 3, "On", "MARKETPLACE", 765806, "Christopher White", "Yes", 6, "Yes", 6, "Yes", "Yes", 4.86, 49, 99.0, 69.0, 73, 0, 0.0, 0, 73.0, "2026-07-22 14:10:14", "2026-07-11 1:57:21", "AUTO_DIRECT_OFFER"], ["WoodSpring Suites Cedar Park - Austin North", 12740, 1590716, "2026-07-29 10:00:00", "Austin, TX", "Housekeeping", 3, 3, "On", "MARKETPLACE", 616355, "Darrion Gabriel", "Yes", 102, "Yes", 94, "Yes", "Yes", 4.66, 110, 98.0, 42.0, 176, 0, 0.0, 0, 0.0, "2026-07-22 14:02:26", "2026-07-01 0:03:38", "AUTO_DIRECT_OFFER"], ["WoodSpring Suites Cedar Park - Austin North", 12740, 1590716, "2026-07-29 10:00:00", "Austin, TX", "Housekeeping", 3, 3, "On", "MARKETPLACE", 160839, "Mia Bennett", "Yes", 13, "Yes", 11, "Yes", "Yes", 4.61, 59, 96.0, 31.0, 73, 0, 0.0, 0, 150.0, "2026-07-22 15:09:47", "2026-07-01 0:01:26", "AUTO_DIRECT_OFFER"], ["Woodspring Suites Savannah Pooler", 18305, 1590738, "2026-07-29 11:00:00", "Savannah, GA / Hilton Head, SC", "Housekeeping", 1, 1, "On", "MARKETPLACE", 757810, "Nechelle Lott", "Yes", 1, "Yes", 1, "Yes", "Yes", 3.25, 4, 50.0, 0.0, 2, 0, 0.0, 0, 4.0, "2026-07-21 15:49:18", "2026-07-21 15:40:23", "AUTO_DIRECT_OFFER"], ["The Peninsula Club Maintenance", 8048, 1603216, "2026-07-29 20:00:00", "Charlotte, NC", "Housekeeping", 1, 1, "On", "MARKETPLACE", 981046, "Lattayne Caldwell", "Yes", 15, "Yes", 15, "Yes", "Yes", 5.0, 14, 100.0, 63.0, 15, 0, 0.0, 0, 18.0, "2026-07-22 14:44:26", "2026-07-13 21:37:17", "AUTO_DIRECT_OFFER"]];
+
+// ---- Show the snapshot time in the viewer's own local timezone ----
+(function localizeSnapshot() {
+  const el = document.getElementById('snapshotTag');
+  const iso = el && el.dataset.snapshotUtc;
+  if (!iso) return;
+  const d = new Date(iso);
+  if (isNaN(d)) return;
+  const formatted = d.toLocaleString('en-US', {
+    month: 'short', day: 'numeric', year: 'numeric',
+    hour: 'numeric', minute: '2-digit', timeZoneName: 'short'
+  });
+  el.textContent = `Snapshot · ${formatted}`;
+})();
+
+function parseDate(s) {
+  // Sheet timestamps use unpadded hours ("2026-07-23 7:00:00"), which strict
+  // ISO parsing rejects once the space is swapped for "T" — pad before parsing.
+  const [datePart, timePart] = String(s).split(' ');
+  const paddedTime = timePart ? timePart.split(':').map(p => p.padStart(2, '0')).join(':') : '00:00:00';
+  return new Date(`${datePart}T${paddedTime}`);
+}
+function fmtShiftDate(s) {
+  const d = parseDate(s);
+  if (isNaN(d)) return s;
+  return d.toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
+}
+// Calendar day of a shift, taken directly from the sheet's date part (no
+// timezone conversion) so it can't roll over to an adjacent day depending on
+// the viewer's local timezone.
+function dayKey(shiftDateStr) {
+  return String(shiftDateStr).split(' ')[0];
+}
+function fmtDay(shiftDateStr) {
+  const key = dayKey(shiftDateStr);
+  const d = new Date(`${key}T00:00:00`);
+  if (isNaN(d)) return key;
+  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
+// ---- Risk scoring: derived from pro history fields on each assigned pro-shift row ----
+function assessRisk(r) {
+  const reasons = [];
+  let score = 0;
+
+  const noShows = r[COLS.noShows30d] || 0;
+  if (noShows > 0) {
+    score += 4;
+    reasons.push(`${noShows} no-show${noShows > 1 ? 's' : ''} in last 30d`);
+  }
+
+  const rating = r[COLS.avgRating];
+  const ratingsCount = r[COLS.ratingsCount] || 0;
+  if (ratingsCount >= 3 && rating != null && rating < 4.3) {
+    score += 3;
+    reasons.push(`${rating.toFixed(2)}★ avg rating (${ratingsCount} ratings)`);
+  } else if (ratingsCount > 0 && ratingsCount < 3 && rating != null && rating < 4.0) {
+    score += 1;
+    reasons.push(`${rating.toFixed(2)}★ rating, small sample (n=${ratingsCount})`);
+  }
+
+  const compLife = r[COLS.completionLifetime];
+  const completedLifetime = r[COLS.completedLifetime] || 0;
+  if (compLife != null && completedLifetime > 0 && compLife < 90) {
+    score += 3;
+    reasons.push(`${compLife}% lifetime completion rate`);
+  }
+
+  const cancels = r[COLS.cancels30d] || 0;
+  const cancelRate = r[COLS.cancelRate30d];
+  if (cancels >= 2 || (cancelRate != null && cancelRate >= 20)) {
+    score += 3;
+    reasons.push(`${cancels} cancellation${cancels !== 1 ? 's' : ''} in 30d${cancelRate != null ? ` (${cancelRate}%)` : ''}`);
+  } else if (cancels === 1 || (cancelRate != null && cancelRate >= 10)) {
+    score += 1;
+    reasons.push(`1 recent cancellation`);
+  }
+
+  const relevantExp = r[COLS.relevantHkExperience];
+  if (relevantExp === 'No' && completedLifetime === 0) {
+    score += 2;
+    reasons.push('Brand-new pro, no completed shifts yet');
+  } else if (relevantExp === 'No') {
+    score += 1;
+    reasons.push('No housekeeping-specific experience');
+  }
+
+  const distance = r[COLS.distanceMiles];
+  if (distance != null && distance > 50) {
+    score += 1;
+    reasons.push(`${distance} mi from this business`);
+  }
+
+  let tier = 'ok';
+  if (score >= 6) tier = 'high';
+  else if (score >= 3) tier = 'medium';
+  return { score, tier, reasons };
+}
+
+// ---- Group pro-shift rows into shifts ----
+function buildShifts(rows) {
+  const map = new Map();
+  rows.forEach(r => {
+    const sid = r[COLS.shiftId];
+    if (!map.has(sid)) {
+      map.set(sid, {
+        shiftId: sid,
+        business: r[COLS.business],
+        market: r[COLS.market],
+        shiftDate: r[COLS.shiftDate],
+        autoSelect: r[COLS.autoSelect],
+        shiftType: r[COLS.shiftType],
+        requested: r[COLS.requested] || 0,
+        confirmed: r[COLS.confirmed] || 0,
+        pros: [],
+      });
+    }
+    const risk = assessRisk(r);
+    map.get(sid).pros.push({ row: r, risk });
+  });
+  const shifts = Array.from(map.values());
+  shifts.forEach(s => {
+    s.gap = s.requested - s.confirmed;
+    s.flagged = s.gap > 0 || s.pros.some(p => p.risk.tier !== 'ok');
+    s.highRiskCount = s.pros.filter(p => p.risk.tier === 'high').length;
+    s.mediumRiskCount = s.pros.filter(p => p.risk.tier === 'medium').length;
+  });
+  shifts.sort((a, b) => parseDate(a.shiftDate) - parseDate(b.shiftDate));
+  return shifts;
+}
+
+// ---- Roll shifts up into per-business fill/bonus needs ----
+function buildBusinessRollups(shifts) {
+  const map = new Map();
+  shifts.forEach(s => {
+    if (!map.has(s.business)) {
+      map.set(s.business, {
+        business: s.business, market: s.market, shiftCount: 0,
+        requested: 0, confirmed: 0, flaggedPros: 0, nextShiftDate: null, nextShiftDateStr: null, minBufferShift: Infinity,
+      });
+    }
+    const b = map.get(s.business);
+    b.shiftCount += 1;
+    b.requested += s.requested;
+    b.confirmed += s.confirmed;
+    b.flaggedPros += s.highRiskCount + s.mediumRiskCount;
+    b.minBufferShift = Math.min(b.minBufferShift, s.confirmed - s.requested);
+    const d = parseDate(s.shiftDate);
+    if (!b.nextShiftDate || d < b.nextShiftDate) { b.nextShiftDate = d; b.nextShiftDateStr = s.shiftDate; }
+    // A shift is "exposed" if it has no cancellation cushion and at least one
+    // flagged pro on it — losing that one pro drops the shift below requested.
+    const shiftBuffer = s.confirmed - s.requested;
+    if (shiftBuffer <= 0 && s.highRiskCount > 0) b._exposedToHighRisk = true;
+    if (shiftBuffer <= 0 && (s.highRiskCount + s.mediumRiskCount) >= 2) b._exposedToStackedRisk = true;
+  });
+  const list = Array.from(map.values());
+  list.forEach(b => {
+    b.gap = b.requested - b.confirmed;
+    // "Needs bonus/overfill": fully booked (no gap) but exposed — a single
+    // cancellation from a flagged pro would create one. Requires either a
+    // high-risk pro with zero cushion, or several flagged pros stacked on
+    // one unbuffered shift. A lone medium-risk flag alone isn't urgent
+    // enough to page ops for a bonus — that's "Monitor".
+    if (b.gap > 0) b.action = 'fill';
+    else if (b._exposedToHighRisk || b._exposedToStackedRisk) b.action = 'bonus';
+    else if (b.flaggedPros > 0) b.action = 'monitor';
+    else b.action = 'healthy';
+  });
+  list.sort((a, b) => {
+    const order = { fill: 0, bonus: 1, monitor: 2, healthy: 3 };
+    if (order[a.action] !== order[b.action]) return order[a.action] - order[b.action];
+    return a.nextShiftDate - b.nextShiftDate;
+  });
+  return list;
+}
+
+const ACTION_LABEL = {
+  fill: 'Needs fill', bonus: 'Needs bonus/overfill', monitor: 'Monitor', healthy: 'Healthy',
+};
+const ACTION_BADGE_CLASS = {
+  fill: 'high', bonus: 'medium', monitor: 'gray', healthy: 'ok',
+};
+
+function populateSelect(id, values) {
+  const sel = document.getElementById(id);
+  values.forEach(v => {
+    const opt = document.createElement('option');
+    opt.value = v; opt.textContent = v;
+    sel.appendChild(opt);
+  });
+}
+
+function escapeHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+// ============ Render: 7-day outlook chart ============
+function renderOutlookChart(shifts) {
+  const dayMap = new Map();
+  shifts.forEach(s => {
+    const key = dayKey(s.shiftDate);
+    if (!dayMap.has(key)) dayMap.set(key, { label: fmtDay(s.shiftDate), confirmed: 0, gap: 0 });
+    const entry = dayMap.get(key);
+    entry.confirmed += s.confirmed;
+    entry.gap += Math.max(0, s.gap);
+  });
+  const keys = Array.from(dayMap.keys()).sort();
+  const labels = keys.map(k => dayMap.get(k).label);
+  const confirmedData = keys.map(k => dayMap.get(k).confirmed);
+  const gapData = keys.map(k => dayMap.get(k).gap);
+
+  new Chart(document.getElementById('outlookChart'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Confirmed', data: confirmedData, backgroundColor: '#3F7A4E', stack: 's' },
+        { label: 'Still open', data: gapData, backgroundColor: '#d64545', stack: 's' },
+      ],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: { x: { stacked: true, grid: { display: false } }, y: { stacked: true, beginAtZero: true, ticks: { precision: 0 } } },
+      plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } },
+    },
+  });
+}
+
+// ============ Render: Pipeline table ============
+let pipelineSort = { key: 'date', dir: 1 };
+function renderPipeline(shifts) {
+  const tbody = document.querySelector('#pipelineTable tbody');
+  const search = document.getElementById('pipelineSearch').value.trim().toLowerCase();
+  const market = document.getElementById('pipelineMarketFilter').value;
+  const auto = document.getElementById('pipelineAutoFilter').value;
+  const day = document.getElementById('pipelineDayFilter').value;
+  const flaggedOnly = document.getElementById('pipelineFlaggedOnly').checked;
+
+  let rows = shifts.filter(s => {
+    if (search && !(s.business.toLowerCase().includes(search) || s.market.toLowerCase().includes(search))) return false;
+    if (market && s.market !== market) return false;
+    if (auto && s.autoSelect !== auto) return false;
+    if (day && dayKey(s.shiftDate) !== day) return false;
+    if (flaggedOnly && !s.flagged) return false;
+    return true;
+  });
+
+  rows = rows.slice().sort((a, b) => {
+    let cmp = 0;
+    if (pipelineSort.key === 'date') cmp = parseDate(a.shiftDate) - parseDate(b.shiftDate);
+    else if (pipelineSort.key === 'gap') cmp = b.gap - a.gap;
+    return cmp * pipelineSort.dir;
+  });
+
+  document.getElementById('pipelineCount').textContent = rows.length;
+
+  if (!rows.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="7">No shifts match these filters.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map(s => {
+    const gapClass = s.gap > 0 ? 'short' : (s.gap === 0 ? 'exact' : 'buffer');
+    const gapLabel = s.gap > 0 ? `${s.requested} / ${s.confirmed} (${s.gap} open)` : `${s.requested} / ${s.confirmed}`;
+    const chips = s.pros.map(p => {
+      const name = escapeHtml(p.row[COLS.proName]);
+      const title = escapeHtml(`${p.row[COLS.avgRating] != null ? p.row[COLS.avgRating] + '★' : 'unrated'} · ${p.row[COLS.completionLifetime] != null ? p.row[COLS.completionLifetime] + '% lifetime completion' : ''} · ${p.risk.reasons.join('; ') || 'no flags'}`);
+      return `<span class="pro-chip ${p.risk.tier}" title="${title}">${name}</span>`;
+    }).join('');
+    return `<tr>
+      <td>${fmtShiftDate(s.shiftDate)}</td>
+      <td><a class="biz-link" href="https://biz.qwick.com/locations/${s.pros[0].row[COLS.locationId]}/gigs/${s.shiftId}/applicants" target="_blank" rel="noopener">${escapeHtml(s.business)}</a></td>
+      <td>${escapeHtml(s.market)}</td>
+      <td>${escapeHtml(s.shiftType)}</td>
+      <td>${escapeHtml(s.autoSelect)}</td>
+      <td><span class="gap-badge ${gapClass}">${gapLabel}</span></td>
+      <td>${chips || '&mdash;'}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ============ Render: Outreach queue table ============
+let outreachSort = { key: 'score', dir: -1 };
+function renderOutreach(shifts) {
+  const tbody = document.querySelector('#outreachTable tbody');
+  const search = document.getElementById('outreachSearch').value.trim().toLowerCase();
+  const market = document.getElementById('outreachMarketFilter').value;
+  const tier = document.getElementById('outreachTierFilter').value;
+  const showAll = document.getElementById('outreachAllRows').checked;
+
+  let entries = [];
+  shifts.forEach(s => {
+    s.pros.forEach(p => {
+      entries.push({ shift: s, pro: p.row, risk: p.risk });
+    });
+  });
+
+  entries = entries.filter(e => {
+    if (!showAll && e.risk.tier === 'ok') return false;
+    if (tier && e.risk.tier !== tier) return false;
+    if (market && e.shift.market !== market) return false;
+    if (search && !(String(e.pro[COLS.proName]).toLowerCase().includes(search) || e.shift.business.toLowerCase().includes(search))) return false;
+    return true;
+  });
+
+  entries.sort((a, b) => {
+    let cmp = 0;
+    if (outreachSort.key === 'score') cmp = a.risk.score - b.risk.score;
+    else if (outreachSort.key === 'date') cmp = parseDate(a.shift.shiftDate) - parseDate(b.shift.shiftDate);
+    return cmp * outreachSort.dir;
+  });
+
+  document.getElementById('outreachCount').textContent = entries.length;
+
+  if (!entries.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="8">No pros match these filters — nice and quiet.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = entries.map(e => {
+    const r = e.pro;
+    const rating = r[COLS.avgRating];
+    const ratingsCount = r[COLS.ratingsCount] || 0;
+    const compLife = r[COLS.completionLifetime];
+    const comp30 = r[COLS.completion30d];
+    const cancels = r[COLS.cancels30d] || 0;
+    const cancelRate = r[COLS.cancelRate30d];
+    const tierLabel = e.risk.tier === 'high' ? 'High' : (e.risk.tier === 'medium' ? 'Medium' : 'OK');
+    const reasonChips = e.risk.reasons.map(reason => `<span class="reason-chip">${escapeHtml(reason)}</span>`).join('') || '&mdash;';
+    return `<tr>
+      <td><span class="badge ${e.risk.tier}">${tierLabel} &middot; ${e.risk.score}</span></td>
+      <td>${escapeHtml(r[COLS.proName])}<div class="sub-line">${escapeHtml(r[COLS.selectionSource])}</div></td>
+      <td><a class="biz-link" href="https://biz.qwick.com/locations/${r[COLS.locationId]}/gigs/${e.shift.shiftId}/applicants" target="_blank" rel="noopener">${escapeHtml(e.shift.business)}</a><div class="sub-line">${escapeHtml(e.shift.market)}</div></td>
+      <td>${fmtShiftDate(e.shift.shiftDate)}</td>
+      <td>${reasonChips}</td>
+      <td>${rating != null ? rating.toFixed(2) + '★' : '&mdash;'}<div class="sub-line">${ratingsCount} ratings</div></td>
+      <td>${compLife != null ? compLife + '%' : '&mdash;'} / ${comp30 != null ? comp30 + '%' : '&mdash;'}</td>
+      <td>${cancels}${cancelRate != null ? ` (${cancelRate}%)` : ''}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ============ Render: Business rollup table ============
+function renderBusinesses(rollups) {
+  const tbody = document.querySelector('#businessTable tbody');
+  const search = document.getElementById('businessSearch').value.trim().toLowerCase();
+  const action = document.getElementById('businessActionFilter').value;
+
+  let rows = rollups.filter(b => {
+    if (search && !b.business.toLowerCase().includes(search)) return false;
+    if (action && b.action !== action) return false;
+    return true;
+  });
+
+  document.getElementById('businessCount').textContent = rows.length;
+
+  if (!rows.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="8">No businesses match these filters.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map(b => {
+    // Thinnest single-shift buffer in the window — what actually drives the
+    // "needs bonus/overfill" flag, as distinct from the aggregate gap above.
+    const tightest = b.minBufferShift;
+    const bufferClass = tightest < 0 ? 'short' : (tightest === 0 ? 'exact' : 'buffer');
+    const bufferLabel = tightest < 0 ? `${tightest} on tightest shift` : (tightest === 0 ? 'None' : `+${tightest}`);
+    return `<tr>
+      <td><span class="badge ${ACTION_BADGE_CLASS[b.action]}">${ACTION_LABEL[b.action]}</span></td>
+      <td>${escapeHtml(b.business)}</td>
+      <td>${escapeHtml(b.market)}</td>
+      <td>${b.nextShiftDateStr ? fmtShiftDate(b.nextShiftDateStr) : '&mdash;'}</td>
+      <td>${b.shiftCount}</td>
+      <td>${b.requested} / ${b.confirmed}</td>
+      <td><span class="gap-badge ${bufferClass}">${bufferLabel}</span></td>
+      <td>${b.flaggedPros || '&mdash;'}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ============ KPIs + alert banner ============
+function renderKPIs(shifts, rollups) {
+  const totalRequested = shifts.reduce((s, x) => s + x.requested, 0);
+  const totalConfirmed = shifts.reduce((s, x) => s + x.confirmed, 0);
+  const unfilled = shifts.reduce((s, x) => s + Math.max(0, x.gap), 0);
+  const unfilledShifts = shifts.filter(x => x.gap > 0).length;
+
+  let highRisk = 0, medRisk = 0;
+  shifts.forEach(s => { highRisk += s.highRiskCount; medRisk += s.mediumRiskCount; });
+
+  const needsFill = rollups.filter(b => b.action === 'fill').length;
+  const needsBonus = rollups.filter(b => b.action === 'bonus').length;
+
+  document.getElementById('kpiShifts').textContent = shifts.length;
+  document.getElementById('kpiShiftsSub').textContent = `${totalRequested} requested, ${totalConfirmed} confirmed`;
+
+  document.getElementById('kpiUnfilled').textContent = unfilled;
+  document.getElementById('kpiUnfilledSub').textContent = `across ${unfilledShifts} shift${unfilledShifts !== 1 ? 's' : ''}`;
+
+  document.getElementById('kpiHighRisk').textContent = highRisk;
+  document.getElementById('kpiHighRiskSub').textContent = 'no-shows, low ratings, low completion';
+
+  document.getElementById('kpiMedRisk').textContent = medRisk;
+  document.getElementById('kpiMedRiskSub').textContent = 'worth a check-in text';
+
+  document.getElementById('kpiNeedsFill').textContent = needsFill;
+  document.getElementById('kpiNeedsFillSub').textContent = 'open slots with no pro yet';
+
+  document.getElementById('kpiNeedsBonus').textContent = needsBonus;
+  document.getElementById('kpiNeedsBonusSub').textContent = 'fully booked, no cancellation cushion';
+
+  const now = new Date();
+  const next24h = new Date(now.getTime() + 24 * 3600 * 1000);
+  const urgent = shifts.filter(s => {
+    const d = parseDate(s.shiftDate);
+    return d >= now && d <= next24h && (s.gap > 0 || s.highRiskCount > 0);
+  });
+  const banner = document.getElementById('urgentBanner');
+  const bannerText = document.getElementById('urgentBannerText');
+  if (urgent.length) {
+    const openSlots = urgent.reduce((s, x) => s + Math.max(0, x.gap), 0);
+    const riskyPros = urgent.reduce((s, x) => s + x.highRiskCount, 0);
+    const parts = [];
+    if (openSlots > 0) parts.push(`${openSlots} open slot${openSlots !== 1 ? 's' : ''}`);
+    if (riskyPros > 0) parts.push(`${riskyPros} high-risk pro${riskyPros !== 1 ? 's' : ''} assigned`);
+    bannerText.textContent = `${urgent.length} shift${urgent.length !== 1 ? 's' : ''} in the next 24 hours need attention — ${parts.join(' and ')}.`;
+    banner.classList.add('show');
+  } else {
+    banner.classList.remove('show');
+  }
+}
+
+// ============ Wire up ============
+const shifts = buildShifts(ROWS);
+const rollups = buildBusinessRollups(shifts);
+
+const markets = Array.from(new Set(ROWS.map(r => r[COLS.market]))).sort();
+populateSelect('pipelineMarketFilter', markets);
+populateSelect('outreachMarketFilter', markets);
+
+const days = Array.from(new Set(shifts.map(s => dayKey(s.shiftDate)))).sort();
+const dayFilter = document.getElementById('pipelineDayFilter');
+days.forEach(d => {
+  const opt = document.createElement('option');
+  opt.value = d;
+  opt.textContent = new Date(d + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  dayFilter.appendChild(opt);
+});
+
+function rerenderAll() {
+  renderPipeline(shifts);
+  renderOutreach(shifts);
+  renderBusinesses(rollups);
+}
+
+['pipelineSearch', 'pipelineMarketFilter', 'pipelineAutoFilter', 'pipelineDayFilter', 'pipelineFlaggedOnly'].forEach(id => {
+  document.getElementById(id).addEventListener('input', () => renderPipeline(shifts));
+});
+['outreachSearch', 'outreachMarketFilter', 'outreachTierFilter', 'outreachAllRows'].forEach(id => {
+  document.getElementById(id).addEventListener('input', () => renderOutreach(shifts));
+});
+['businessSearch', 'businessActionFilter'].forEach(id => {
+  document.getElementById(id).addEventListener('input', () => renderBusinesses(rollups));
+});
+
+document.querySelectorAll('#pipelineTable th.sortable').forEach(th => {
+  th.addEventListener('click', () => {
+    const key = th.dataset.sort;
+    pipelineSort.dir = (pipelineSort.key === key) ? -pipelineSort.dir : 1;
+    pipelineSort.key = key;
+    renderPipeline(shifts);
+  });
+});
+document.querySelectorAll('#outreachTable th.sortable').forEach(th => {
+  th.addEventListener('click', () => {
+    const key = th.dataset.sort;
+    outreachSort.dir = (outreachSort.key === key) ? -outreachSort.dir : (key === 'score' ? -1 : 1);
+    outreachSort.key = key;
+    renderOutreach(shifts);
+  });
+});
+
+renderKPIs(shifts, rollups);
+renderOutlookChart(shifts);
+rerenderAll();
+</script>
+</body>
+</html>

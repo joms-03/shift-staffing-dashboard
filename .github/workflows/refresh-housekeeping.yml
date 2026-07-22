@@ -1,0 +1,38 @@
+name: Refresh Housekeeping dashboard from Google Sheet
+
+on:
+  schedule:
+    - cron: "20 * * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: refresh-housekeeping-dashboard
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Refresh housekeeping-outreach.html from the sheet
+        run: python3 scripts/refresh_housekeeping.py
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "shift-dashboard-bot"
+          git config user.email "actions@users.noreply.github.com"
+          if git diff --quiet -- housekeeping-outreach.html; then
+            echo "No data changes."
+            exit 0
+          fi
+          git add housekeeping-outreach.html
+          git commit -m "Auto-refresh housekeeping dashboard data from sheet"
+          git push
