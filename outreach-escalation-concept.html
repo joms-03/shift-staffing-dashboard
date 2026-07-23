@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<script type="application/json" id="cowork-artifact-meta">
+{
+  "name": "Pro Outreach — Escalation Workflow Concept",
+  "schemaVersion": 1
+}
+</script>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pro Outreach — Escalation Workflow (Concept)</title>
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #FBF3E7;
+    --card: #ffffff;
+    --border: #e8dfcd;
+    --text: #262626;
+    --muted: #8a8272;
+    --accent: #3F7A4E;
+    --accent-dark: #2e5c3a;
+    --red: #d64545;
+    --red-bg: #fdecec;
+    --orange: #c76a1a;
+    --orange-bg: #fdf2e3;
+    --green: #3F7A4E;
+    --green-bg: #e8f3ea;
+    --blue: #2f6fb0;
+    --blue-bg: #e8f0fa;
+    --gray-bg: #f2ede0;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 14px;
+  }
+  a { color: inherit; }
+
+  /* ---------- Top nav (decorative, for context) ---------- */
+  header.topnav {
+    display: flex; align-items: center; justify-content: space-between;
+    background: #fff; border-bottom: 1px solid var(--border);
+    padding: 10px 24px; gap: 20px; flex-wrap: wrap;
+  }
+  .topnav-left { display: flex; align-items: center; gap: 22px; }
+  .topnav-left img { height: 22px; }
+  .topnav-links { display: flex; gap: 18px; font-size: 13px; font-weight: 600; color: var(--muted); }
+  .topnav-links span { cursor: default; }
+  .topnav-right { display: flex; align-items: center; gap: 12px; }
+  .admin-pill {
+    background: var(--green-bg); color: var(--accent); font-weight: 700; font-size: 12.5px;
+    padding: 6px 14px; border-radius: 8px; border: 1px solid var(--border);
+  }
+  .user-chip { display: flex; align-items: center; gap: 8px; font-size: 12.5px; }
+  .user-chip .dot { width: 26px; height: 26px; border-radius: 50%; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 11px; }
+  .user-chip .lines { line-height: 1.3; }
+  .user-chip .sub { color: var(--muted); font-size: 11px; }
+
+  /* ---------- Page layout ---------- */
+  .page-wrap { display: flex; align-items: flex-start; }
+  .sidebar {
+    width: 250px; flex-shrink: 0; padding: 20px 16px; border-right: 1px solid var(--border);
+    min-height: calc(100vh - 54px); background: #fff;
+  }
+  .sidebar label.field-label { display: block; font-size: 11px; color: var(--muted); margin: 12px 0 4px; text-transform: uppercase; letter-spacing: .03em; }
+  .sidebar select, .sidebar input[type=text] {
+    width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px;
+    font-size: 13px; background: #fff; color: var(--text);
+  }
+  .sidebar .clear-link { display: inline-block; margin-top: 16px; font-size: 12.5px; color: var(--accent); font-weight: 600; text-decoration: underline; cursor: pointer; }
+
+  main { flex: 1; min-width: 0; padding: 22px 28px 60px; }
+
+  .page-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+  .page-head h1 { font-size: 20px; margin: 0 0 4px; }
+  .page-head .subtitle { color: var(--muted); font-size: 13px; max-width: 640px; line-height: 1.5; }
+  .reset-btn {
+    background: #fff; border: 1px solid var(--border); color: var(--text); font-weight: 600;
+    font-size: 12.5px; padding: 8px 14px; border-radius: 8px; cursor: pointer; white-space: nowrap;
+  }
+  .reset-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ---------- KPI row ---------- */
+  .kpi-row { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-bottom: 18px; }
+  .kpi-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 13px 14px; }
+  .kpi-label { font-size: 10.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; margin-bottom: 5px; }
+  .kpi-value { font-size: 22px; font-weight: 700; line-height: 1.1; }
+  .kpi-card.danger .kpi-value { color: var(--red); }
+  .kpi-card.warn .kpi-value { color: var(--orange); }
+  .kpi-card.good .kpi-value { color: var(--green); }
+  .kpi-card.info .kpi-value { color: var(--blue); }
+  .kpi-card.neutral .kpi-value { color: var(--muted); }
+
+  /* ---------- Legend callout ---------- */
+  .legend {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 14px 18px; margin-bottom: 20px;
+  }
+  .legend h2 { font-size: 13.5px; margin: 0 0 10px; }
+  .legend-steps { display: flex; gap: 10px; flex-wrap: wrap; }
+  .legend-step { flex: 1; min-width: 190px; display: flex; gap: 10px; align-items: flex-start; }
+  .legend-num {
+    width: 22px; height: 22px; border-radius: 50%; background: var(--gray-bg); color: var(--text);
+    font-weight: 700; font-size: 11.5px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .legend-step p { margin: 0; font-size: 12px; color: var(--muted); line-height: 1.4; }
+  .legend-step strong { display: block; font-size: 12.5px; color: var(--text); margin-bottom: 1px; }
+
+  /* ---------- Toolbar ---------- */
+  .toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 6px; }
+  .risk-tabs { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .risk-tab {
+    appearance: none; cursor: pointer; font: inherit; font-size: 12.5px; font-weight: 700;
+    color: var(--text); background: var(--gray-bg); border: 1px solid var(--border);
+    padding: 7px 14px; border-radius: 20px;
+  }
+  .risk-tab:hover { border-color: var(--accent); }
+  .risk-tab.active { color: #fff; background: var(--text); border-color: var(--text); }
+  .toolbar-right { display: flex; gap: 8px; align-items: center; }
+  .toggle-group { display: flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .toggle-group button { border: none; background: #fff; padding: 7px 16px; font-size: 12.5px; font-weight: 700; color: var(--muted); cursor: pointer; }
+  .toggle-group button.active { background: var(--text); color: #fff; }
+  select.sort-select { padding: 7px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 12.5px; background: #fff; }
+
+  .result-count { font-size: 12px; color: var(--muted); margin: 10px 0 14px; }
+
+  /* ---------- Bucket headers ---------- */
+  .bucket-head { font-size: 11.5px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin: 22px 0 10px; }
+  .bucket-head:first-child { margin-top: 4px; }
+
+  /* ---------- Pro cards ---------- */
+  .pro-card {
+    background: var(--card); border: 1px solid var(--border); border-left: 4px solid var(--red);
+    border-radius: 10px; padding: 14px 16px; margin-bottom: 12px;
+  }
+  .pro-card.stage-confirmed { border-left-color: var(--green); }
+  .pro-card.stage-dismissed { border-left-color: var(--muted); opacity: .6; }
+
+  .card-main { display: flex; gap: 12px; align-items: flex-start; }
+  .avatar {
+    width: 42px; height: 42px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center;
+    justify-content: center; color: #fff; font-weight: 700; font-size: 14px; border: 2px solid var(--red);
+  }
+  .stage-confirmed .avatar { border-color: var(--green); }
+  .stage-dismissed .avatar { border-color: var(--muted); }
+
+  .card-body { flex: 1; min-width: 0; }
+  .card-top-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 3px; }
+  .pro-name { font-weight: 700; font-size: 14px; }
+  .pro-meta { color: var(--muted); font-size: 12px; }
+
+  .badge { display: inline-flex; align-items: center; gap: 3px; font-size: 10.5px; font-weight: 700; padding: 2px 9px; border-radius: 20px; white-space: nowrap; }
+  .badge.risky { background: var(--red-bg); color: var(--red); }
+  .badge.cancel-risk { background: var(--red-bg); color: var(--red); }
+  .badge.inexperienced { background: var(--gray-bg); color: var(--muted); }
+
+  .card-stats { font-size: 12.5px; color: var(--muted); margin-bottom: 4px; }
+  .card-stats .star { color: var(--orange); }
+  .first-ever-tag { color: var(--red); font-weight: 600; }
+
+  .card-shift-row { font-size: 13px; }
+  .tag { display: inline-block; font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 5px; margin-left: 4px; }
+  .tag.first5 { background: var(--green-bg); color: var(--accent); }
+  .tag.firstconfirm { background: var(--blue-bg); color: var(--blue); }
+  .time-until { color: var(--orange); font-weight: 700; }
+  .card-shift-row .sep { color: var(--muted); }
+  .shift-link, .cc-link { color: var(--accent); font-weight: 600; text-decoration: none; }
+  .shift-link:hover, .cc-link:hover { text-decoration: underline; }
+
+  .card-side { flex-shrink: 0; text-align: right; }
+  .stage-badge { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 4px 10px; border-radius: 20px; margin-bottom: 6px; white-space: nowrap; }
+  .stage-badge.stage-call { background: var(--red-bg); color: var(--red); }
+  .stage-badge.stage-remind { background: var(--orange-bg); color: var(--orange); }
+  .stage-badge.stage-overfill { background: var(--orange-bg); color: var(--orange); }
+  .stage-badge.stage-dismiss_suggested { background: var(--red-bg); color: var(--red); }
+  .stage-badge.stage-confirmed { background: var(--green-bg); color: var(--green); }
+  .stage-badge.stage-dismissed { background: var(--gray-bg); color: var(--muted); }
+
+  /* ---------- Stepper ---------- */
+  .outreach-panel { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border); }
+  .stepper { display: flex; align-items: center; margin-bottom: 10px; }
+  .step { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 92px; flex-shrink: 0; }
+  .step-dot {
+    width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; background: var(--gray-bg); color: var(--muted); border: 2px solid var(--border);
+  }
+  .step.done .step-dot { background: var(--green); border-color: var(--green); color: #fff; }
+  .step.current .step-dot { background: #fff; border-color: var(--orange); color: var(--orange); animation: stepPulse 1.6s infinite; }
+  .step.current.urgent .step-dot { border-color: var(--red); color: var(--red); animation: stepPulseUrgent 1.2s infinite; }
+  .step.skipped .step-dot { background: var(--gray-bg); border-color: var(--border); color: var(--muted); opacity: .5; }
+  @keyframes stepPulse { 0%{ box-shadow: 0 0 0 0 rgba(199,106,26,.35);} 70%{ box-shadow: 0 0 0 7px rgba(199,106,26,0);} 100%{ box-shadow: 0 0 0 0 rgba(199,106,26,0);} }
+  @keyframes stepPulseUrgent { 0%{ box-shadow: 0 0 0 0 rgba(214,69,69,.4);} 70%{ box-shadow: 0 0 0 7px rgba(214,69,69,0);} 100%{ box-shadow: 0 0 0 0 rgba(214,69,69,0);} }
+  .step-label { font-size: 11px; font-weight: 700; color: var(--text); }
+  .step.pending .step-label, .step.skipped .step-label { color: var(--muted); font-weight: 600; }
+  .step-time { font-size: 10px; color: var(--muted); text-align: center; line-height: 1.3; min-height: 13px; }
+  .step-line { flex: 1; height: 2px; background: var(--border); margin: 0 -6px 18px; position: relative; top: -1px; }
+  .step-line.done { background: var(--green); }
+
+  .action-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .rec-banner {
+    display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 600; padding: 8px 12px;
+    border-radius: 8px; flex: 1; min-width: 240px;
+  }
+  .rec-banner.tone-red { background: var(--red-bg); color: var(--red); }
+  .rec-banner.tone-orange { background: var(--orange-bg); color: var(--orange); }
+  .rec-banner.tone-green { background: var(--green-bg); color: var(--green); }
+  .rec-banner.tone-gray { background: var(--gray-bg); color: var(--muted); }
+  .rec-banner .urgent-tag { background: var(--red); color: #fff; font-size: 9.5px; font-weight: 800; padding: 2px 6px; border-radius: 10px; letter-spacing: .03em; }
+
+  button.action-btn {
+    font: inherit; font-size: 12.5px; font-weight: 700; padding: 8px 14px; border-radius: 8px;
+    cursor: pointer; white-space: nowrap; border: 1px solid var(--border); background: #fff; color: var(--text);
+  }
+  button.action-btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button.action-btn.primary:hover { background: var(--accent-dark); }
+  button.action-btn.danger { background: var(--red); border-color: var(--red); color: #fff; }
+  button.action-btn.danger:hover { background: #b93838; }
+  button.action-btn.ghost { background: #fff; color: var(--muted); }
+  button.action-btn.ghost:hover { border-color: var(--accent); color: var(--accent); }
+  button.action-btn:disabled { opacity: .5; cursor: default; }
+
+  footer.page-foot { margin-top: 26px; font-size: 11.5px; color: var(--muted); text-align: center; }
+
+  @media (max-width: 1150px) {
+    .kpi-row { grid-template-columns: repeat(3, 1fr); }
+    .sidebar { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header class="topnav">
+  <div class="topnav-left">
+    <img src="data:image/png;base64,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" alt="Qwick">
+    <div class="topnav-links">
+      <span>Post</span><span>Home</span><span>Pay</span><span>Schedule</span><span>Connect</span><span>Dashboards</span>
+    </div>
+  </div>
+  <div class="topnav-right">
+    <div class="admin-pill">Admin</div>
+    <div class="user-chip">
+      <div class="dot">JL</div>
+      <div class="lines">Jomarc Lamorena<div class="sub">Portsmouth Pavilion</div></div>
+    </div>
+  </div>
+</header>
+
+<div class="page-wrap">
+  <aside class="sidebar">
+    <label class="field-label">Locations</label>
+    <select disabled><option>All locations</option></select>
+    <label class="field-label">Markets</label>
+    <select disabled><option>All markets</option></select>
+    <label class="field-label">Skills</label>
+    <select disabled><option>All skills</option></select>
+    <label class="field-label">Auto select</label>
+    <select disabled><option>On</option></select>
+    <label class="field-label">Shift window</label>
+    <select disabled><option>Starts within 7 days</option></select>
+    <label class="field-label">Pro tier</label>
+    <select disabled><option>VIP</option></select>
+    <label class="field-label">First 5</label>
+    <select disabled><option>First 5 only</option></select>
+    <label class="field-label">Confirm type</label>
+    <select disabled><option>First confirm</option></select>
+    <label class="field-label">Outreach stage <span style="color:var(--accent)">&middot; new</span></label>
+    <select id="stageFilter">
+      <option value="">All stages</option>
+      <option value="call">Needs a call</option>
+      <option value="remind">Awaiting response &middot; remind</option>
+      <option value="overfill">Overfill recommended</option>
+      <option value="dismiss_suggested">Ready to dismiss</option>
+      <option value="confirmed">Confirmed</option>
+      <option value="dismissed">Dismissed</option>
+    </select>
+    <label class="field-label">Search</label>
+    <input type="text" id="searchBox" placeholder="Search pro name or id&hellip;">
+    <span class="clear-link" id="clearFilters">Clear filters</span>
+  </aside>
+
+  <main>
+    <div class="page-head">
+      <div>
+        <h1>Pro Outreach &mdash; Escalation Workflow</h1>
+        <div class="subtitle">Concept redesign of the At-Risk Pros outreach queue: instead of one flat "Outreach" action, each pro now moves through a guided escalation &mdash; call first, remind if there's no answer, recommend an overfill slot if they stay silent as the shift nears, and dismiss them from the queue if nothing lands. Click the action buttons on any card below to try it.</div>
+      </div>
+      <button class="reset-btn" onclick="location.reload()">&#8635; Reset demo</button>
+    </div>
+
+    <div class="kpi-row">
+      <div class="kpi-card danger">
+        <div class="kpi-label">Needs a call</div>
+        <div class="kpi-value" id="kpiCall">0</div>
+      </div>
+      <div class="kpi-card warn">
+        <div class="kpi-label">Awaiting response</div>
+        <div class="kpi-value" id="kpiRemind">0</div>
+      </div>
+      <div class="kpi-card warn">
+        <div class="kpi-label">Overfill recommended</div>
+        <div class="kpi-value" id="kpiOverfill">0</div>
+      </div>
+      <div class="kpi-card danger">
+        <div class="kpi-label">Ready to dismiss</div>
+        <div class="kpi-value" id="kpiDismissReady">0</div>
+      </div>
+      <div class="kpi-card good">
+        <div class="kpi-label">Confirmed</div>
+        <div class="kpi-value" id="kpiConfirmed">0</div>
+      </div>
+      <div class="kpi-card neutral">
+        <div class="kpi-label">Dismissed</div>
+        <div class="kpi-value" id="kpiDismissed">0</div>
+      </div>
+    </div>
+
+    <div class="legend">
+      <h2>How the escalation works</h2>
+      <div class="legend-steps">
+        <div class="legend-step"><div class="legend-num">1</div><p><strong>Call</strong>Reach out by phone first &mdash; it converts best, especially close to shift start.</p></div>
+        <div class="legend-step"><div class="legend-num">2</div><p><strong>Remind</strong>No answer? Send a quick text/push nudge instead of calling again right away.</p></div>
+        <div class="legend-step"><div class="legend-num">3</div><p><strong>Recommend overfill</strong>Still silent as the shift gets close? We flag the shift for a backup overfill slot so the business isn't left short.</p></div>
+        <div class="legend-step"><div class="legend-num">4</div><p><strong>Dismiss</strong>No response after all attempts &mdash; clear them from the queue so no one keeps chasing a dead lead.</p></div>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <div class="risk-tabs" id="riskTabs">
+        <button class="risk-tab active" data-risk="">All <span class="rt-count"></span></button>
+        <button class="risk-tab" data-risk="cancellation">Cancellation risk <span class="rt-count"></span></button>
+        <button class="risk-tab" data-risk="inexperienced">Inexperienced on shift <span class="rt-count"></span></button>
+        <button class="risk-tab" data-risk="dormant">Going dormant <span class="rt-count"></span></button>
+      </div>
+      <div class="toolbar-right">
+        <div class="toggle-group"><button class="active">At-Risk</button><button>Outreach</button></div>
+        <select class="sort-select" id="sortSelect">
+          <option value="soonest">Soonest shift first</option>
+          <option value="risk">Risk score, high to low</option>
+          <option value="name">Name, A&ndash;Z</option>
+        </select>
+      </div>
+    </div>
+    <div class="result-count" id="resultCount"></div>
+
+    <div id="listRoot"></div>
+
+    <footer class="page-foot">Concept mockup &middot; sample data mirrors the current At-Risk Pros &middot; Outreach queue &middot; no live data connected.</footer>
+  </main>
+</div>
+
+<script>
+const PROS = [
+  { id:'625838', name:'Pamela C.', location:'Phoenix-Mesa, AZ', rating:4.7, shifts:175, completion:94, score:9.8, cancels30d:1, firstEver:false,
+    risk:['cancellation'], role:'Concession Worker', employer:'Ringling Bros. (RB-148) &middot; Mortgage Matchup Center',
+    first5:true, firstConfirm:false, shiftId:'1599210', timeUntil:'8h 44m', shiftLabel:'Thu, Jul 23, 5:00 PM MST', bucket:'today', urgent:true,
+    outreach:{ callOutcome:null, callTime:null, reminderSentAt:null, overfillRequestedAt:null, dismissed:false, dismissedAt:null } },
+
+  { id:'824578', name:'Jessica S.', location:'Chicago, IL', rating:4.3, shifts:47, completion:92, score:8.2, cancels30d:1, firstEver:false,
+    risk:['cancellation'], role:'Event Help', employer:'Cloth and Flame CHI',
+    first5:true, firstConfirm:false, shiftId:'1610828', timeUntil:'1d', shiftLabel:'Fri, Jul 24, 11:00 AM CDT', bucket:'next3', urgent:false,
+    outreach:{ callOutcome:'no_answer', callTime:'8:52 AM', reminderSentAt:null, overfillRequestedAt:null, dismissed:false, dismissedAt:null } },
+
+  { id:'641117', name:'Jeffrey B.', location:'Chicago, IL', rating:4.6, shifts:52, completion:93, score:8.5, cancels30d:1, firstEver:false,
+    risk:['cancellation'], role:'General Laborer', employer:'Fever &middot; DroneArt @ Seatgeek Stadium',
+    first5:true, firstConfirm:false, shiftId:'1575448', timeUntil:'1d 1h', shiftLabel:'Fri, Jul 24, 12:00 PM CDT', bucket:'next3', urgent:false,
+    outreach:{ callOutcome:'no_answer', callTime:'7:40 AM', reminderSentAt:'8:05 AM', overfillRequestedAt:null, dismissed:false, dismissedAt:null } },
+
+  { id:'1007770', name:'Brianna S.', location:'Detroit, MI', rating:0.0, shifts:0, completion:0, score:0.2, cancels30d:1, firstEver:true,
+    risk:['cancellation','inexperienced'], role:'Housekeeping', employer:'Sonesta Simply Suites Detroit Ann Arbor',
+    first5:true, firstConfirm:true, shiftId:'1609050', timeUntil:'1d 21h', shiftLabel:'Sat, Jul 25, 9:00 AM EDT', bucket:'next3', urgent:false,
+    outreach:{ callOutcome:null, callTime:null, reminderSentAt:null, overfillRequestedAt:null, dismissed:false, dismissedAt:null } },
+
+  { id:'988574', name:'Jamarr S.', location:'Indianapolis, IN', rating:2.0, shifts:0, completion:0, score:5.0, cancels30d:1, firstEver:true,
+    risk:['cancellation','inexperienced'], role:'Parking Attendant', employer:'LAZ &middot; Indianapolis Motor Speedway',
+    first5:true, firstConfirm:false, shiftId:'1603749', timeUntil:'1d 21h', shiftLabel:'Sat, Jul 25, 9:00 AM EDT', bucket:'next3', urgent:false,
+    outreach:{ callOutcome:'reached', callTime:'9:02 AM', reminderSentAt:null, overfillRequestedAt:null, dismissed:false, dismissedAt:null } },
+
+  { id:'626792', name:'Carolyn M.', location:'Phoenix-Mesa, AZ', rating:4.8, shifts:173, completion:73, score:10.0, cancels30d:1, firstEver:false,
+    risk:['cancellation'], role:'Event Help', employer:'Fever &middot; Candlelight @ The Madison Center for the Arts',
+    first5:true, firstConfirm:false, shiftId:'1574569', timeUntil:'2d 6h', shiftLabel:'Sat, Jul 25, 3:00 PM MST', bucket:'next3', urgent:false,
+    outreach:{ callOutcome:'no_answer', callTime:'Jul 22, 4:10 PM', reminderSentAt:'Jul 22, 4:45 PM', overfillRequestedAt:'Jul 22, 6:00 PM', dismissed:false, dismissedAt:null } },
+
+  { id:'907557', name:'Anton G.', location:'Phoenix-Mesa, AZ', rating:4.1, shifts:64, completion:98, score:9.4, cancels30d:1, firstEver:false,
+    risk:['cancellation'], role:'Event Help', employer:'Fever &middot; Candlelight @ The Madison Center for the Arts',
+    first5:true, firstConfirm:false, shiftId:'1574569', timeUntil:'2d 6h', shiftLabel:'Sat, Jul 25, 3:00 PM MST', bucket:'next3', urgent:false,
+    outreach:{ callOutcome:null, callTime:null, reminderSentAt:null, overfillRequestedAt:null, dismissed:false, dismissedAt:null } },
+
+  { id:'714244', name:'Ruth S.', location:'Phoenix-Mesa, AZ', rating:4.8, shifts:92, completion:90, score:9.9, cancels30d:1, firstEver:false,
+    risk:['cancellation'], role:'Concession Worker', employer:'Ringling Bros. (RB-148) &middot; Mortgage Matchup Center',
+    first5:true, firstConfirm:false, shiftId:'1599214', timeUntil:'3d', shiftLabel:'Sun, Jul 26, 9:00 AM MST', bucket:'later', urgent:false,
+    outreach:{ callOutcome:'no_answer', callTime:'9:15 AM', reminderSentAt:null, overfillRequestedAt:null, dismissed:false, dismissedAt:null } },
+
+  { id:'538833', name:'Shatara J.', location:'Atlanta, GA', rating:3.0, shifts:0, completion:0, score:2.0, cancels30d:1, firstEver:true,
+    risk:['cancellation','inexperienced'], role:'General Laborer', employer:'Live Nation &middot; State Farm Arena',
+    first5:true, firstConfirm:false, shiftId:'1611002', timeUntil:'3d 4h', shiftLabel:'Sun, Jul 26, 1:00 PM EDT', bucket:'later', urgent:false,
+    outreach:{ callOutcome:'no_answer', callTime:'Jul 21, 2:00 PM', reminderSentAt:'Jul 21, 2:30 PM', overfillRequestedAt:'Jul 21, 5:00 PM', dismissed:true, dismissedAt:'Jul 22, 9:00 AM' } },
+
+  { id:'552310', name:'Marcus T.', location:'Atlanta, GA', rating:4.4, shifts:31, completion:88, score:7.9, cancels30d:1, firstEver:false,
+    risk:['cancellation'], role:'Event Help', employer:'Live Nation &middot; State Farm Arena',
+    first5:true, firstConfirm:false, shiftId:'1611015', timeUntil:'3d 9h', shiftLabel:'Sun, Jul 26, 6:00 PM EDT', bucket:'later', urgent:false,
+    outreach:{ callOutcome:null, callTime:null, reminderSentAt:null, overfillRequestedAt:null, dismissed:false, dismissedAt:null } },
+
+  { id:'690221', name:'Dana K.', location:'Detroit, MI', rating:4.0, shifts:19, completion:85, score:7.1, cancels30d:1, firstEver:false,
+    risk:['cancellation'], role:'Housekeeping', employer:'Sonesta Simply Suites Detroit Ann Arbor',
+    first5:true, firstConfirm:false, shiftId:'1609061', timeUntil:'4d', shiftLabel:'Mon, Jul 27, 9:00 AM EDT', bucket:'later', urgent:false,
+    outreach:{ callOutcome:'no_answer', callTime:'Jul 22, 10:00 AM', reminderSentAt:'Jul 22, 10:40 AM', overfillRequestedAt:null, dismissed:false, dismissedAt:null } },
+
+  { id:'773415', name:'Felix R.', location:'Indianapolis, IN', rating:4.9, shifts:210, completion:97, score:9.6, cancels30d:1, firstEver:false,
+    risk:['cancellation'], role:'Parking Attendant', employer:'LAZ &middot; Indianapolis Motor Speedway',
+    first5:true, firstConfirm:false, shiftId:'1603760', timeUntil:'4d 3h', shiftLabel:'Mon, Jul 27, 12:00 PM EDT', bucket:'later', urgent:false,
+    outreach:{ callOutcome:'reached', callTime:'Jul 22, 11:00 AM', reminderSentAt:null, overfillRequestedAt:null, dismissed:false, dismissedAt:null } },
+];
+
+const AVATAR_COLORS = ['#3F7A4E','#c76a1a','#2f6fb0','#8a5cbf','#c25b8f','#4a90a4'];
+function avatarColor(name){ let h=0; for(const c of name) h=(h*31+c.charCodeAt(0))>>>0; return AVATAR_COLORS[h % AVATAR_COLORS.length]; }
+function initials(name){ return name.split(' ').map(p=>p[0]).join('').slice(0,2).toUpperCase(); }
+function timeLabel(){ return new Date().toLocaleTimeString([], {hour:'numeric', minute:'2-digit'}); }
+
+const STEP_ORDER = ['call','remind','overfill','dismiss'];
+
+function stepDone(key,o){
+  if(key==='call') return o.callOutcome!=null;
+  if(key==='remind') return !!o.reminderSentAt;
+  if(key==='overfill') return !!o.overfillRequestedAt;
+  if(key==='dismiss') return !!o.dismissed;
+}
+function isResolved(o){ return o.callOutcome==='reached' || o.dismissed; }
+function currentStepKey(o){
+  if(isResolved(o)) return null;
+  for(const k of STEP_ORDER) if(!stepDone(k,o)) return k;
+  return null;
+}
+function computeStage(o){
+  if(o.dismissed) return 'dismissed';
+  if(o.callOutcome==='reached') return 'confirmed';
+  const cur = currentStepKey(o);
+  if(cur==='dismiss') return 'dismiss_suggested';
+  return cur; // call | remind | overfill
+}
+const STAGE_LABELS = {
+  call:'Needs a call', remind:'Awaiting response', overfill:'Overfill recommended',
+  dismiss_suggested:'Ready to dismiss', confirmed:'Confirmed', dismissed:'Dismissed'
+};
+
+function stepperHTML(o){
+  const resolved = isResolved(o);
+  const cur = currentStepKey(o);
+  let html = '<div class="stepper">';
+  STEP_ORDER.forEach((key, i) => {
+    const done = stepDone(key,o);
+    let cls = 'pending';
+    if(done) cls = 'done';
+    else if(!resolved && key===cur) cls = 'current' + (o.urgent ? ' urgent' : '');
+    else if(resolved) cls = 'skipped';
+    const num = done ? '&#10003;' : (i+1);
+    let timeText = '';
+    if(key==='call') timeText = o.callTime ? (o.callOutcome==='reached' ? 'Reached &middot; '+o.callTime : 'No answer &middot; '+o.callTime) : '';
+    if(key==='remind') timeText = o.reminderSentAt ? 'Sent &middot; '+o.reminderSentAt : '';
+    if(key==='overfill') timeText = o.overfillRequestedAt ? 'Posted &middot; '+o.overfillRequestedAt : '';
+    if(key==='dismiss') timeText = o.dismissedAt ? 'Dismissed &middot; '+o.dismissedAt : '';
+    if(!timeText && cls==='skipped') timeText = 'Not needed';
+    html += `<div class="step ${cls}"><div class="step-dot">${num}</div><div class="step-label">${key[0].toUpperCase()+key.slice(1)}</div><div class="step-time">${timeText}</div></div>`;
+    if(i < STEP_ORDER.length-1) html += `<div class="step-line ${done ? 'done' : ''}"></div>`;
+  });
+  html += '</div>';
+  return html;
+}
+
+function actionRowHTML(pro){
+  const o = pro.outreach;
+  const id = pro.id;
+  if(o.dismissed){
+    return `<div class="action-row">
+      <div class="rec-banner tone-gray">&#128683; Dismissed ${o.dismissedAt} &mdash; no response after call, reminder${o.overfillRequestedAt?' &amp; overfill':''}.</div>
+      <button class="action-btn ghost" data-action="undo-dismiss" data-id="${id}">&#8617; Undo dismiss</button>
+    </div>`;
+  }
+  if(o.callOutcome==='reached'){
+    return `<div class="action-row">
+      <div class="rec-banner tone-green">&#9989; Confirmed &mdash; reached ${o.callTime}. No further action needed.</div>
+    </div>`;
+  }
+  if(o.callLogging){
+    return `<div class="action-row">
+      <div class="rec-banner tone-orange">How did the call go?</div>
+      <button class="action-btn primary" data-action="log-reached" data-id="${id}">&#9989; Reached &mdash; confirmed</button>
+      <button class="action-btn danger" data-action="log-no-answer" data-id="${id}">&#10007; No answer</button>
+    </div>`;
+  }
+  const cur = currentStepKey(o);
+  if(cur==='call'){
+    return `<div class="action-row">
+      <div class="rec-banner tone-red">&#128222; Recommended: call ${pro.name.split(' ')[0]} now${o.urgent ? ' &mdash; shift starts in '+pro.timeUntil : ''}.${o.urgent ? ' <span class="urgent-tag">URGENT</span>' : ''}</div>
+      <a class="action-btn primary" href="tel:5555550100" data-action="call-start" data-id="${id}">&#128222; Call now</a>
+    </div>`;
+  }
+  if(cur==='remind'){
+    return `<div class="action-row">
+      <div class="rec-banner tone-orange">&#128172; No answer at ${o.callTime}. Recommended: send a reminder instead of calling again right away.</div>
+      <button class="action-btn primary" data-action="send-reminder" data-id="${id}">&#128172; Send reminder</button>
+      <button class="action-btn ghost" data-action="mark-reached" data-id="${id}">&#9989; They called back</button>
+    </div>`;
+  }
+  if(cur==='overfill'){
+    return `<div class="action-row">
+      <div class="rec-banner tone-orange">&#9888; Still silent after a call + reminder, ${pro.timeUntil} until shift. Recommend posting an overfill slot so this shift isn't left short.${o.urgent ? ' <span class="urgent-tag">URGENT</span>' : ''}</div>
+      <button class="action-btn primary" data-action="post-overfill" data-id="${id}">&#128227; Recommend overfill</button>
+      <button class="action-btn ghost" data-action="mark-reached" data-id="${id}">&#9989; They responded</button>
+    </div>`;
+  }
+  if(cur==='dismiss'){
+    return `<div class="action-row">
+      <div class="rec-banner tone-red">No response after call, reminder &amp; overfill request. Recommend dismissing them from the queue.</div>
+      <button class="action-btn danger" data-action="dismiss" data-id="${id}">&#128683; Dismiss pro</button>
+      <button class="action-btn ghost" data-action="mark-reached" data-id="${id}">&#9989; They responded</button>
+    </div>`;
+  }
+  return '';
+}
+
+function cardHTML(pro){
+  const o = pro.outreach;
+  const stage = computeStage(o);
+  const stars = '&#9733;'.repeat(Math.round(pro.rating));
+  const badges = [
+    `<span class="badge risky">&#9888; Risky (confirmed)</span>`,
+    pro.risk.includes('cancellation') ? `<span class="badge cancel-risk">Cancellation risk</span>` : '',
+    pro.risk.includes('inexperienced') ? `<span class="badge inexperienced">Inexperienced on shift</span>` : ''
+  ].join(' ');
+  return `<div class="pro-card stage-${stage}" data-id="${pro.id}">
+    <div class="card-main">
+      <div class="avatar" style="background:${avatarColor(pro.name)}">${initials(pro.name)}</div>
+      <div class="card-body">
+        <div class="card-top-row">
+          <span class="pro-name">${pro.name}</span>
+          <span class="pro-meta">${pro.location} &middot; #${pro.id}</span>
+          ${badges}
+        </div>
+        <div class="card-stats"><span class="star">${stars || '&#9734;'}</span> ${pro.rating.toFixed(1)} &middot; ${pro.shifts} shifts &middot; ${pro.completion}% completion &middot; score ${pro.score} &middot; ${pro.cancels30d} cancels in 30d ${pro.firstEver ? '&middot; <span class="first-ever-tag">First-ever shift</span>' : ''}</div>
+        <div class="card-shift-row"><strong>${pro.role}</strong> <span class="sep">&middot;</span> ${pro.employer}
+          ${pro.first5 ? '<span class="tag first5">FIRST 5</span>' : ''}${pro.firstConfirm ? '<span class="tag firstconfirm">FIRST CONFIRM</span>' : ''}
+          <span class="sep">&middot;</span> <span class="time-until">${pro.timeUntil} until start</span>
+          <span class="sep">&middot;</span> ${pro.shiftLabel}
+          <span class="sep">&middot;</span> <a class="shift-link" href="#">Shift #${pro.shiftId} &#8599;</a>
+          <span class="sep">&middot;</span> <a class="cc-link" href="#">Command Center &#8599;</a>
+        </div>
+      </div>
+      <div class="card-side">
+        <span class="stage-badge stage-${stage}">${STAGE_LABELS[stage]}</span>
+      </div>
+    </div>
+    <div class="outreach-panel">
+      ${stepperHTML(o)}
+      ${actionRowHTML(pro)}
+    </div>
+  </div>`;
+}
+
+let activeRisk = '';
+let activeStage = '';
+let searchTerm = '';
+let sortMode = 'soonest';
+
+function matchesFilters(pro){
+  if(activeRisk === 'dormant') return false; // no sample data in this bucket, mirrors "Going dormant 0"
+  if(activeRisk && !pro.risk.includes(activeRisk)) return false;
+  if(activeStage && computeStage(pro.outreach) !== activeStage) return false;
+  if(searchTerm){
+    const t = searchTerm.toLowerCase();
+    if(!pro.name.toLowerCase().includes(t) && !pro.id.includes(t)) return false;
+  }
+  return true;
+}
+
+function sortList(list){
+  const order = { today:0, next3:1, later:2 };
+  if(sortMode === 'name') return list.slice().sort((a,b)=>a.name.localeCompare(b.name));
+  if(sortMode === 'risk') return list.slice().sort((a,b)=>b.score-a.score);
+  return list.slice().sort((a,b)=> (order[a.bucket]-order[b.bucket]));
+}
+
+const BUCKET_TITLES = { today:'Today/Tonight (&le;24h)', next3:'Next 3 Days', later:'Later This Week' };
+
+function render(){
+  const filtered = PROS.filter(matchesFilters);
+  const sorted = sortList(filtered);
+  const root = document.getElementById('listRoot');
+
+  if(sortMode === 'soonest'){
+    let html = '';
+    ['today','next3','later'].forEach(bucket=>{
+      const items = sorted.filter(p=>p.bucket===bucket);
+      if(!items.length) return;
+      html += `<div class="bucket-head">${BUCKET_TITLES[bucket]} &middot; ${items.length}</div>`;
+      html += items.map(cardHTML).join('');
+    });
+    root.innerHTML = html || '<div style="color:var(--muted);padding:30px 0;text-align:center;">No pros match the current filters.</div>';
+  } else {
+    root.innerHTML = sorted.map(cardHTML).join('') || '<div style="color:var(--muted);padding:30px 0;text-align:center;">No pros match the current filters.</div>';
+  }
+
+  document.getElementById('resultCount').textContent = `${sorted.length} of ${PROS.length} pros loaded`;
+
+  // Risk tab counts (against full dataset, not current filters)
+  document.querySelectorAll('#riskTabs .risk-tab').forEach(btn=>{
+    const risk = btn.dataset.risk;
+    let count;
+    if(risk === '') count = PROS.length;
+    else if(risk === 'dormant') count = 0;
+    else count = PROS.filter(p=>p.risk.includes(risk)).length;
+    btn.querySelector('.rt-count').textContent = count;
+  });
+
+  // KPIs (against full dataset)
+  const stages = PROS.map(p=>computeStage(p.outreach));
+  document.getElementById('kpiCall').textContent = stages.filter(s=>s==='call').length;
+  document.getElementById('kpiRemind').textContent = stages.filter(s=>s==='remind').length;
+  document.getElementById('kpiOverfill').textContent = stages.filter(s=>s==='overfill').length;
+  document.getElementById('kpiDismissReady').textContent = stages.filter(s=>s==='dismiss_suggested').length;
+  document.getElementById('kpiConfirmed').textContent = stages.filter(s=>s==='confirmed').length;
+  document.getElementById('kpiDismissed').textContent = stages.filter(s=>s==='dismissed').length;
+}
+
+document.getElementById('listRoot').addEventListener('click', (e)=>{
+  const btn = e.target.closest('[data-action]');
+  if(!btn) return;
+  e.preventDefault();
+  const pro = PROS.find(p=>p.id===btn.dataset.id);
+  if(!pro) return;
+  const o = pro.outreach;
+  switch(btn.dataset.action){
+    case 'call-start': o.callLogging = true; break;
+    case 'log-reached': o.callOutcome='reached'; o.callTime=timeLabel(); o.callLogging=false; break;
+    case 'log-no-answer': o.callOutcome='no_answer'; o.callTime=timeLabel(); o.callLogging=false; break;
+    case 'send-reminder': o.reminderSentAt=timeLabel(); break;
+    case 'post-overfill': o.overfillRequestedAt=timeLabel(); break;
+    case 'dismiss': o.dismissed=true; o.dismissedAt=timeLabel(); break;
+    case 'undo-dismiss': o.dismissed=false; o.dismissedAt=null; break;
+    case 'mark-reached': o.callOutcome='reached'; if(!o.callTime) o.callTime=timeLabel(); break;
+  }
+  render();
+});
+
+document.querySelectorAll('#riskTabs .risk-tab').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('#riskTabs .risk-tab').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    activeRisk = btn.dataset.risk;
+    render();
+  });
+});
+document.getElementById('stageFilter').addEventListener('change', (e)=>{ activeStage = e.target.value; render(); });
+document.getElementById('searchBox').addEventListener('input', (e)=>{ searchTerm = e.target.value.trim(); render(); });
+document.getElementById('sortSelect').addEventListener('change', (e)=>{ sortMode = e.target.value; render(); });
+document.getElementById('clearFilters').addEventListener('click', ()=>{
+  activeRisk=''; activeStage=''; searchTerm=''; sortMode='soonest';
+  document.querySelectorAll('#riskTabs .risk-tab').forEach(b=>b.classList.remove('active'));
+  document.querySelector('#riskTabs .risk-tab[data-risk=""]').classList.add('active');
+  document.getElementById('stageFilter').value='';
+  document.getElementById('searchBox').value='';
+  document.getElementById('sortSelect').value='soonest';
+  render();
+});
+
+render();
+</script>
+</body>
+</html>
