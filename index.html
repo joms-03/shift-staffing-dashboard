@@ -276,7 +276,7 @@ if (window.self === window.top) {
   <div>
     <img class="brand-mark" src="assets/qwick-logo.png" alt="Qwick">
     <h1>Business First 5 Shifts Dashboard</h1>
-    <div class="subtitle">New-business onboarding &amp; shift fill tracking, next 5 days plus full pipeline visibility &middot; built from the <a class="inline-link" href="https://docs.google.com/spreadsheets/d/1Ry1cozuvFYRYPv8dg449WaC2mDykAtScb1R1JLmGbjM/edit?gid=2006814828#gid=2006814828" target="_blank" rel="noopener">operations Google Sheet</a> &middot; Account/Ops Managers sourced from the <a class="inline-link" href="https://docs.google.com/spreadsheets/d/1ZJHI_sz51unpEr6RB1WqrBMvH3BhkNFjjm8P1CHNCpk/edit?gid=934826613#gid=934826613" target="_blank" rel="noopener">markets &amp; managers sheet</a> &middot; see also the <a class="inline-link" href="qwick-dashboard.html" target="_top">Qwick Magic Team Dashboard</a></div>
+    <div class="subtitle">New-business onboarding &amp; shift fill tracking, next 7 days plus full pipeline visibility &middot; built from the <a class="inline-link" href="https://docs.google.com/spreadsheets/d/1Ry1cozuvFYRYPv8dg449WaC2mDykAtScb1R1JLmGbjM/edit?gid=2006814828#gid=2006814828" target="_blank" rel="noopener">operations Google Sheet</a> &middot; Account/Ops Managers sourced from the <a class="inline-link" href="https://docs.google.com/spreadsheets/d/1ZJHI_sz51unpEr6RB1WqrBMvH3BhkNFjjm8P1CHNCpk/edit?gid=934826613#gid=934826613" target="_blank" rel="noopener">markets &amp; managers sheet</a> &middot; see also the <a class="inline-link" href="qwick-dashboard.html" target="_top">Qwick Magic Team Dashboard</a></div>
   </div>
   <div class="snapshot-tag" id="snapshotTag" data-snapshot-utc="2026-07-28T17:42:54Z">Snapshot &middot; July 28, 2026 17:42 UTC</div>
 </header>
@@ -288,7 +288,7 @@ if (window.self === window.top) {
 
 <div class="kpi-row">
   <div class="kpi-card danger">
-    <div class="kpi-label">Unfilled shifts &mdash; next 5 days</div>
+    <div class="kpi-label">Unfilled shifts &mdash; next 7 days</div>
     <div class="kpi-value" id="kpiUnfilled5">&ndash;</div>
     <div class="kpi-sub" id="kpiUnfilled5Sub">&nbsp;</div>
   </div>
@@ -344,7 +344,7 @@ if (window.self === window.top) {
   <summary class="panel-summary">
     <div>
       <h2>Needs Approval<span class="count-pill" id="approvalCount">0</span></h2>
-      <div class="panel-desc">Every unapproved shift across the full pipeline, not just the next 5 days &mdash; sorted soonest first.</div>
+      <div class="panel-desc">Every unapproved shift across the full pipeline, not just the next 7 days &mdash; sorted soonest first.</div>
     </div>
     <span class="toggle-btn"><span class="chevron">&#9660;</span> Toggle</span>
   </summary>
@@ -372,8 +372,8 @@ if (window.self === window.top) {
 <details class="panel" id="unfilledPanel" open>
   <summary class="panel-summary">
     <div>
-      <h2>Unfilled Shifts &mdash; Next 5 Days<span class="count-pill" id="unfilledCount">0</span></h2>
-      <div class="panel-desc">Shifts happening within the next 5 days that still need pros confirmed. Top priority to avoid last-minute scrambles.</div>
+      <h2>Unfilled Shifts &mdash; Next 7 Days<span class="count-pill" id="unfilledCount">0</span></h2>
+      <div class="panel-desc">Shifts happening within the next 7 days that still need pros confirmed. Top priority to avoid last-minute scrambles.</div>
     </div>
     <span class="toggle-btn"><span class="chevron">&#9660;</span> Toggle</span>
   </summary>
@@ -384,7 +384,7 @@ if (window.self === window.top) {
       <select class="filter-select" id="unfilledStatusFilter"><option value="">All statuses</option></select>
       <select class="filter-select" id="unfilledAutoFilter">
         <option value="">Auto Select: All</option>
-        <option value="Auto Select On">Auto Select: On</option>
+        <option value="Auto Select On" selected>Auto Select: On</option>
         <option value="Auto Select Off">Auto Select: Off</option>
       </select>
       <select class="filter-select" id="unfilledMgrFilter"><option value="">All Account Managers</option></select>

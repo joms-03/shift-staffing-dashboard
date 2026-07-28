@@ -260,7 +260,7 @@ if (window.self === window.top) {
 
 <div class="kpi-row">
   <div class="kpi-card">
-    <div class="kpi-label">VIP shifts in pipeline</div>
+    <div class="kpi-label">VIP shifts &mdash; next 7 days</div>
     <div class="kpi-value" id="kpiShifts">&ndash;</div>
     <div class="kpi-sub" id="kpiShiftsSub">&nbsp;</div>
   </div>
@@ -300,8 +300,8 @@ if (window.self === window.top) {
 <details class="panel" id="pipelinePanel" open>
   <summary class="panel-summary">
     <div>
-      <h2>VIP Shift Pipeline<span class="count-pill" id="pipelineCount">0</span></h2>
-      <div class="panel-desc">Every upcoming VIP shift, its fill status, and whether auto-select can cover it.</div>
+      <h2>VIP Shift Pipeline &mdash; Next 7 Days<span class="count-pill" id="pipelineCount">0</span></h2>
+      <div class="panel-desc">Every VIP shift in the next 7 days, its fill status, and whether auto-select can cover it.</div>
     </div>
     <span class="toggle-btn"><span class="chevron">&#9660;</span> Toggle</span>
   </summary>
@@ -311,10 +311,10 @@ if (window.self === window.top) {
       <select class="filter-select" id="pipelineMarketFilter"><option value="">All markets</option></select>
       <select class="filter-select" id="pipelineAutoFilter">
         <option value="">Auto Select: All</option>
-        <option value="On">Auto Select: On</option>
+        <option value="On" selected>Auto Select: On</option>
         <option value="Off">Auto Select: Off</option>
       </select>
-      <label class="chk"><input type="checkbox" id="pipelineUnfilledOnly"> Unfilled shifts only</label>
+      <label class="chk"><input type="checkbox" id="pipelineUnfilledOnly" checked> Unfilled shifts only</label>
     </div>
     <div class="table-scroll">
       <table id="pipelineTable">
@@ -493,18 +493,26 @@ function urgencyTier(hours, outreachStatus) {
 
 // ---- Build one row per VIP shift ----
 function buildShifts(rows) {
-  const shifts = rows.map(r => ({
-    shiftId: r[SCOLS.shiftId],
-    shiftDate: r[SCOLS.startDatetime],
-    market: r[SCOLS.market],
-    business: r[SCOLS.locationName],
-    shiftType: r[SCOLS.shiftType],
-    autoSelect: r[SCOLS.autoSelect],
-    requested: r[SCOLS.requested] || 0,
-    confirmed: r[SCOLS.confirmed] || 0,
-    selectedPros: r[SCOLS.selectedPros],
-    shiftUrl: r[SCOLS.shiftUrl],
-  }));
+  // Standard pipeline window across all Qwick dashboards: next 7 days.
+  const now = new Date();
+  const cutoff = new Date(now.getTime() + 7 * 24 * 3600 * 1000);
+  const shifts = rows
+    .filter(r => {
+      const d = parseDate(r[SCOLS.startDatetime]);
+      return d >= now && d <= cutoff;
+    })
+    .map(r => ({
+      shiftId: r[SCOLS.shiftId],
+      shiftDate: r[SCOLS.startDatetime],
+      market: r[SCOLS.market],
+      business: r[SCOLS.locationName],
+      shiftType: r[SCOLS.shiftType],
+      autoSelect: r[SCOLS.autoSelect],
+      requested: r[SCOLS.requested] || 0,
+      confirmed: r[SCOLS.confirmed] || 0,
+      selectedPros: r[SCOLS.selectedPros],
+      shiftUrl: r[SCOLS.shiftUrl],
+    }));
   shifts.forEach(s => { s.gap = s.requested - s.confirmed; });
   shifts.sort((a, b) => parseDate(a.shiftDate) - parseDate(b.shiftDate));
   return shifts;

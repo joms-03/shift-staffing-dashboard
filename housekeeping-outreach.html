@@ -324,7 +324,7 @@ if (window.self === window.top) {
       <select class="filter-select" id="pipelineMarketFilter"><option value="">All markets</option></select>
       <select class="filter-select" id="pipelineAutoFilter">
         <option value="">Auto Select: All</option>
-        <option value="On">Auto Select: On</option>
+        <option value="On" selected>Auto Select: On</option>
         <option value="Off">Auto Select: Off</option>
       </select>
       <select class="filter-select" id="pipelineDayFilter"><option value="">All 7 days</option></select>
@@ -568,7 +568,15 @@ function buildShifts(rows) {
     const risk = assessRisk(r);
     map.get(sid).pros.push({ row: r, risk });
   });
-  const shifts = Array.from(map.values());
+  // Standard pipeline window across all Qwick dashboards: next 7 days. The
+  // sheet is already pre-filtered to this window, but cap here too so the
+  // dashboard stays correct if that upstream scope ever drifts.
+  const now = new Date();
+  const cutoff = new Date(now.getTime() + 7 * 24 * 3600 * 1000);
+  const shifts = Array.from(map.values()).filter(s => {
+    const d = parseDate(s.shiftDate);
+    return d >= now && d <= cutoff;
+  });
   shifts.forEach(s => {
     s.gap = s.requested - s.confirmed;
     s.flagged = s.gap > 0 || s.pros.some(p => p.risk.tier !== 'ok');
