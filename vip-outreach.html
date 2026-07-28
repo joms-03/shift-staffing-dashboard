@@ -346,6 +346,11 @@ if (window.self === window.top) {
   <div class="panel-body">
     <div class="filters">
       <input class="search-box" id="outreachSearch" type="text" placeholder="Search pro or business&hellip;">
+      <select class="filter-select" id="outreachWindowFilter">
+        <option value="24">Next 24 hours</option>
+        <option value="48" selected>Next 48 hours</option>
+        <option value="0">All upcoming</option>
+      </select>
       <select class="filter-select" id="outreachMarketFilter"><option value="">All markets</option></select>
       <select class="filter-select" id="outreachTierFilter">
         <option value="">All urgency</option>
@@ -662,13 +667,21 @@ let outreachSort = { key: 'hours', dir: 1 };
 function renderOutreach(entries) {
   const tbody = document.querySelector('#outreachTable tbody');
   const search = document.getElementById('outreachSearch').value.trim().toLowerCase();
+  const windowHours = parseInt(document.getElementById('outreachWindowFilter').value, 10);
   const market = document.getElementById('outreachMarketFilter').value;
   const tier = document.getElementById('outreachTierFilter').value;
   const verified = document.getElementById('outreachVerifiedFilter').value;
   const status = document.getElementById('outreachStatusFilter').value;
 
+  const now = new Date();
+  const cutoff = windowHours > 0 ? new Date(now.getTime() + windowHours * 3600 * 1000) : null;
+
   let rows = entries.filter(e => {
     const r = e.row;
+    if (cutoff) {
+      const d = parseDate(r[OCOLS.startTime]);
+      if (d < now || d > cutoff) return false;
+    }
     if (tier && e.tier !== tier) return false;
     if (verified && r[OCOLS.verifiedStatus] !== verified) return false;
     if (status && r[OCOLS.outreachStatus] !== status) return false;
@@ -812,7 +825,7 @@ function rerenderAll() {
 ['pipelineSearch', 'pipelineMarketFilter', 'pipelineAutoFilter', 'pipelineUnfilledOnly'].forEach(id => {
   document.getElementById(id).addEventListener('input', () => renderPipeline(shifts));
 });
-['outreachSearch', 'outreachMarketFilter', 'outreachTierFilter', 'outreachVerifiedFilter', 'outreachStatusFilter'].forEach(id => {
+['outreachSearch', 'outreachWindowFilter', 'outreachMarketFilter', 'outreachTierFilter', 'outreachVerifiedFilter', 'outreachStatusFilter'].forEach(id => {
   document.getElementById(id).addEventListener('input', () => renderOutreach(outreachEntries));
 });
 ['businessSearch', 'businessActionFilter'].forEach(id => {

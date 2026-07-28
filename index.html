@@ -456,9 +456,8 @@ if (window.self === window.top) {
     <div class="filters">
       <input class="search-box" id="outreachSearch" type="text" placeholder="Search pro or business&hellip;">
       <select class="filter-select" id="outreachWindowFilter">
-        <option value="7">Next 7 days</option>
-        <option value="14">Next 14 days</option>
-        <option value="30">Next 30 days</option>
+        <option value="24">Next 24 hours</option>
+        <option value="48" selected>Next 48 hours</option>
         <option value="0">All upcoming</option>
       </select>
       <select class="filter-select" id="outreachMarketFilter"><option value="">All markets</option></select>
@@ -933,13 +932,13 @@ const SEVERITY_BADGE_CLASS = { high: 'high', medium: 'medium', ok: 'gray' };
 function renderOutreachQueue() {
   const tbody = document.querySelector('#outreachTable tbody');
   const search = document.getElementById('outreachSearch').value.trim().toLowerCase();
-  const windowDays = parseInt(document.getElementById('outreachWindowFilter').value, 10);
+  const windowHours = parseInt(document.getElementById('outreachWindowFilter').value, 10);
   const market = document.getElementById('outreachMarketFilter').value;
   const skills = outreachSkillMS.getSelected();
   const tierFilter = document.getElementById('outreachTierFilter').value;
 
   const now = new Date();
-  const cutoff = windowDays > 0 ? new Date(now.getTime() + windowDays * 24 * 3600 * 1000) : null;
+  const cutoff = windowHours > 0 ? new Date(now.getTime() + windowHours * 3600 * 1000) : null;
 
   let entries = REVIEW_ROWS.map(r => ({ row: r, risk: assessRisk(r, true) }));
 

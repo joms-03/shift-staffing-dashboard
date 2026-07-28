@@ -360,6 +360,11 @@ if (window.self === window.top) {
   <div class="panel-body">
     <div class="filters">
       <input class="search-box" id="outreachSearch" type="text" placeholder="Search pro or business&hellip;">
+      <select class="filter-select" id="outreachWindowFilter">
+        <option value="24">Next 24 hours</option>
+        <option value="48" selected>Next 48 hours</option>
+        <option value="0">All upcoming</option>
+      </select>
       <select class="filter-select" id="outreachMarketFilter"><option value="">All markets</option></select>
       <select class="filter-select" id="outreachTierFilter">
         <option value="">All flagged tiers</option>
@@ -729,9 +734,13 @@ let outreachSort = { key: 'score', dir: -1 };
 function renderOutreach(shifts) {
   const tbody = document.querySelector('#outreachTable tbody');
   const search = document.getElementById('outreachSearch').value.trim().toLowerCase();
+  const windowHours = parseInt(document.getElementById('outreachWindowFilter').value, 10);
   const market = document.getElementById('outreachMarketFilter').value;
   const tier = document.getElementById('outreachTierFilter').value;
   const showAll = document.getElementById('outreachAllRows').checked;
+
+  const now = new Date();
+  const cutoff = windowHours > 0 ? new Date(now.getTime() + windowHours * 3600 * 1000) : null;
 
   let entries = [];
   shifts.forEach(s => {
@@ -742,6 +751,10 @@ function renderOutreach(shifts) {
 
   entries = entries.filter(e => {
     if (!showAll && e.risk.tier === 'ok') return false;
+    if (cutoff) {
+      const d = parseDate(e.shift.shiftDate);
+      if (d < now || d > cutoff) return false;
+    }
     if (tier && e.risk.tier !== tier) return false;
     if (market && e.shift.market !== market) return false;
     if (search && !(String(e.pro[COLS.proName]).toLowerCase().includes(search) || e.shift.business.toLowerCase().includes(search))) return false;
@@ -904,7 +917,7 @@ function rerenderAll() {
 ['pipelineSearch', 'pipelineMarketFilter', 'pipelineAutoFilter', 'pipelineDayFilter', 'pipelineUnfilledOnly'].forEach(id => {
   document.getElementById(id).addEventListener('input', () => renderPipeline(shifts));
 });
-['outreachSearch', 'outreachMarketFilter', 'outreachTierFilter', 'outreachAllRows'].forEach(id => {
+['outreachSearch', 'outreachWindowFilter', 'outreachMarketFilter', 'outreachTierFilter', 'outreachAllRows'].forEach(id => {
   document.getElementById(id).addEventListener('input', () => renderOutreach(shifts));
 });
 ['businessSearch', 'businessActionFilter'].forEach(id => {
