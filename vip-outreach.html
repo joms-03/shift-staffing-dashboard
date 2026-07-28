@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<script type="application/json" id="cowork-artifact-meta">
+{
+  "name": "Qwick VIP Outreach Dashboard",
+  "schemaVersion": 1
+}
+</script>
+<html lang="en">
+<head>
+<script>
+// Not embedded in the hub — this page shouldn't be used as its own standalone
+// link, so bounce straight to the canonical hub tab instead.
+if (window.self === window.top) {
+  window.location.replace('qwick-dashboard.html#vip');
+}
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VIP Pro Outreach Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #FBF3E7;
+    --card: #ffffff;
+    --border: #e8dfcd;
+    --text: #262626;
+    --muted: #8a8272;
+    --accent: #3F7A4E;
+    --red: #d64545;
+    --red-bg: #fdecec;
+    --orange: #c76a1a;
+    --orange-bg: #fdf2e3;
+    --green: #3F7A4E;
+    --green-bg: #e8f3ea;
+    --gray-bg: #f2ede0;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    padding: 24px 28px 60px;
+  }
+  a.inline-link { color: var(--accent); }
+  /* Shown inside the Qwick Magic Team Dashboard hub's iframe — the hub's own
+     tab label and logo already identify this page, so drop the duplicates. */
+  html.embedded header.page-head h1,
+  html.embedded header.page-head img.brand-mark { display: none; }
+  html.embedded body { padding-top: 12px; }
+  .brand-mark {
+    height: 20px;
+    width: auto;
+    display: block;
+    margin-bottom: 8px;
+  }
+  header.page-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  h1 { font-size: 22px; margin: 0 0 4px; font-weight: 700; }
+  .subtitle { color: var(--muted); font-size: 13px; line-height: 1.5; }
+  .snapshot-tag {
+    font-size: 12px;
+    color: var(--muted);
+    background: var(--gray-bg);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 6px 14px;
+    white-space: nowrap;
+  }
+
+  .alert-banner {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    background: var(--red-bg);
+    border: 1px solid #f0b3ab;
+    border-radius: 12px;
+    padding: 12px 18px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .alert-banner.show { display: flex; }
+  .alert-banner .msg { display: flex; align-items: center; gap: 10px; font-size: 13.5px; color: var(--red); font-weight: 600; }
+  .alert-dot {
+    width: 9px; height: 9px; border-radius: 50%; background: var(--red);
+    animation: pulse 1.8s infinite; flex-shrink: 0;
+  }
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(214,69,69,.45); }
+    70% { box-shadow: 0 0 0 8px rgba(214,69,69,0); }
+    100% { box-shadow: 0 0 0 0 rgba(214,69,69,0); }
+  }
+  .alert-banner a.jump { font-size: 12.5px; color: var(--red); text-decoration: underline; font-weight: 600; white-space: nowrap; }
+
+  .kpi-row {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 14px;
+    margin-bottom: 22px;
+  }
+  .kpi-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 18px;
+  }
+  .kpi-label { font-size: 11.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 6px; }
+  .kpi-value { font-size: 26px; font-weight: 700; line-height: 1.1; }
+  .kpi-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .kpi-card.danger .kpi-value { color: var(--red); }
+  .kpi-card.warn .kpi-value { color: var(--orange); }
+  .kpi-card.good .kpi-value { color: var(--green); }
+
+  .chart-panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px 22px 8px;
+    margin-bottom: 22px;
+  }
+  .chart-panel h2 { font-size: 16px; margin: 0 0 2px; }
+  .chart-panel .panel-desc { font-size: 12.5px; color: var(--muted); margin: 0 0 12px; }
+  .chart-wrap { height: 200px; }
+
+  details.panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px 22px;
+    margin-bottom: 22px;
+  }
+  summary.panel-summary { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; cursor: pointer; list-style: none; }
+  summary.panel-summary::-webkit-details-marker { display: none; }
+  summary.panel-summary::marker { content: ""; }
+  .toggle-btn {
+    display: flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 600;
+    color: var(--accent); background: var(--green-bg); border: 1px solid var(--border);
+    padding: 6px 14px; border-radius: 20px; white-space: nowrap; flex-shrink: 0;
+  }
+  summary.panel-summary:hover .toggle-btn { border-color: var(--accent); }
+  .chevron { font-size: 12px; color: var(--accent); transition: transform 0.15s ease; flex-shrink: 0; }
+  details[open] > summary.panel-summary .chevron { transform: rotate(180deg); }
+  .panel-body { margin-top: 14px; }
+  .panel-head { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+  .panel-head h2, summary.panel-summary h2 { font-size: 16px; margin: 0; }
+  .panel-desc { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+  .count-pill {
+    display: inline-block; background: var(--gray-bg); color: var(--muted); font-size: 11.5px;
+    font-weight: 700; padding: 2px 9px; border-radius: 20px; margin-left: 8px; vertical-align: middle;
+  }
+
+  .filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; align-items: center; }
+  .search-box, .filter-select {
+    padding: 7px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; background: #fff; color: var(--text);
+  }
+  .search-box { width: 210px; }
+  .filter-select { cursor: pointer; }
+  label.chk { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text); cursor: pointer; user-select: none; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { font-size: 11px; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); font-weight: 600; white-space: nowrap; }
+  tbody tr:hover { background: var(--gray-bg); }
+  .table-scroll { overflow-x: auto; }
+  .empty-row td { text-align: center; color: var(--muted); padding: 22px 10px; }
+
+  .badge {
+    display: inline-block; font-size: 10.5px; font-weight: 700; padding: 2px 9px; border-radius: 20px; white-space: nowrap;
+  }
+  .badge.high { background: var(--red-bg); color: var(--red); }
+  .badge.medium { background: var(--orange-bg); color: var(--orange); }
+  .badge.ok { background: var(--green-bg); color: var(--green); }
+  .badge.gray { background: var(--gray-bg); color: var(--muted); }
+
+  .gap-badge { font-weight: 700; }
+  .gap-badge.short { color: var(--red); }
+  .gap-badge.exact { color: var(--text); }
+  .gap-badge.buffer { color: var(--green); }
+
+  .biz-link { color: var(--text); font-weight: 600; text-decoration: none; }
+  .biz-link:hover { text-decoration: underline; }
+  .tel-link, .shift-link { color: var(--accent); font-weight: 600; text-decoration: none; white-space: nowrap; }
+  .tel-link:hover, .shift-link:hover { text-decoration: underline; }
+  .sub-line { color: var(--muted); font-size: 11.5px; margin-top: 1px; }
+
+  th.sortable { cursor: pointer; }
+  th.sortable:hover { color: var(--accent); }
+  th.sortable .arrow { opacity: .5; margin-left: 3px; }
+  th.sortable.active .arrow { opacity: 1; }
+
+  footer { margin-top: 8px; font-size: 11.5px; color: var(--muted); text-align: center; }
+
+  @media (max-width: 1100px) {
+    .kpi-row { grid-template-columns: repeat(3, 1fr); }
+  }
+  @media (max-width: 640px) {
+    .kpi-row { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+<script>if (window.self !== window.top) document.documentElement.classList.add('embedded');</script>
+</head>
+<body>
+<div id="authGate" style="position:fixed;inset:0;z-index:99999;background:var(--bg,#FBF3E7);display:flex;align-items:center;justify-content:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <form id="authForm" style="background:var(--card,#fff);border:1px solid var(--border,#e8dfcd);border-radius:12px;padding:28px 32px;display:flex;flex-direction:column;gap:12px;width:260px;box-shadow:0 8px 24px rgba(0,0,0,.1);">
+    <div style="font-weight:700;font-size:15px;color:var(--text,#262626);">Enter password</div>
+    <input id="authInput" type="password" autocomplete="current-password" placeholder="Password" style="padding:9px 12px;border:1px solid var(--border,#e8dfcd);border-radius:8px;font-size:14px;">
+    <div id="authError" style="color:var(--red,#d64545);font-size:12.5px;display:none;">Incorrect password.</div>
+    <button type="submit" style="background:var(--accent,#3F7A4E);color:#fff;border:none;border-radius:8px;padding:9px 12px;font-weight:600;cursor:pointer;font-size:13.5px;">Unlock</button>
+  </form>
+</div>
+<script>
+(function () {
+  var PASSWORD = 'Ch3f';
+  var STORAGE_KEY = 'qwickDashboardAuthed';
+  var gate = document.getElementById('authGate');
+  // Loaded inside the hub's iframe — the hub's own gate already blocks all
+  // interaction with this page, so skip the redundant prompt. (Showing it
+  // anyway breaks visually once this page's iframe gets auto-resized to its
+  // full content height: the gate's fixed overlay covers that entire height,
+  // centering the password form far below the visible viewport.)
+  if (window.self !== window.top) { gate.remove(); return; }
+  if (localStorage.getItem(STORAGE_KEY) === 'yes') { gate.remove(); return; }
+  document.getElementById('authForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var input = document.getElementById('authInput');
+    if (input.value === PASSWORD) {
+      localStorage.setItem(STORAGE_KEY, 'yes');
+      gate.remove();
+    } else {
+      document.getElementById('authError').style.display = 'block';
+      input.value = '';
+      input.focus();
+    }
+  });
+})();
+</script>
+
+
+<header class="page-head">
+  <div>
+    <img class="brand-mark" src="assets/qwick-logo.png" alt="Qwick">
+    <h1>VIP Pro Outreach Dashboard</h1>
+    <div class="subtitle">Upcoming shifts at VIP businesses, and which assigned pros still need an outreach call before their shift starts &middot; built from the <a class="inline-link" href="https://docs.google.com/spreadsheets/d/1b4Le5-0Uev8ji9ziCcvSh1MOERKWqeAwZyiPj8RtBkc/edit?gid=849611260#gid=849611260" target="_blank" rel="noopener">VIP shift sheet</a> and the <a class="inline-link" href="https://docs.google.com/spreadsheets/d/1k5oRyKF4RfMs9pvB7WVGLICKM6R-4MI10ZbTvk76PPw/edit?gid=0#gid=0" target="_blank" rel="noopener">VIP outreach sheet</a> &middot; see also the <a class="inline-link" href="qwick-dashboard.html" target="_top">Qwick Magic Team Dashboard</a></div>
+  </div>
+  <div class="snapshot-tag" id="snapshotTag" data-snapshot-utc="2026-07-28T17:39:09Z">Snapshot &middot; July 28, 2026 17:39 UTC</div>
+</header>
+
+<div class="alert-banner" id="urgentBanner">
+  <div class="msg"><span class="alert-dot"></span><span id="urgentBannerText">Checking for urgent outreach&hellip;</span></div>
+  <a class="jump" href="#outreachPanel">Review outreach queue &darr;</a>
+</div>
+
+<div class="kpi-row">
+  <div class="kpi-card">
+    <div class="kpi-label">VIP shifts in pipeline</div>
+    <div class="kpi-value" id="kpiShifts">&ndash;</div>
+    <div class="kpi-sub" id="kpiShiftsSub">&nbsp;</div>
+  </div>
+  <div class="kpi-card danger">
+    <div class="kpi-label">Unfilled slots</div>
+    <div class="kpi-value" id="kpiUnfilled">&ndash;</div>
+    <div class="kpi-sub" id="kpiUnfilledSub">&nbsp;</div>
+  </div>
+  <div class="kpi-card danger">
+    <div class="kpi-label">Not outreached &middot; &lt;12h out</div>
+    <div class="kpi-value" id="kpiUrgent">&ndash;</div>
+    <div class="kpi-sub" id="kpiUrgentSub">&nbsp;</div>
+  </div>
+  <div class="kpi-card warn">
+    <div class="kpi-label">Not outreached &middot; 12&ndash;24h out</div>
+    <div class="kpi-value" id="kpiWatch">&ndash;</div>
+    <div class="kpi-sub" id="kpiWatchSub">&nbsp;</div>
+  </div>
+  <div class="kpi-card warn">
+    <div class="kpi-label">Unverified pros in queue</div>
+    <div class="kpi-value" id="kpiUnverified">&ndash;</div>
+    <div class="kpi-sub" id="kpiUnverifiedSub">&nbsp;</div>
+  </div>
+  <div class="kpi-card warn">
+    <div class="kpi-label">Auto-select off shifts</div>
+    <div class="kpi-value" id="kpiAutoOff">&ndash;</div>
+    <div class="kpi-sub" id="kpiAutoOffSub">&nbsp;</div>
+  </div>
+</div>
+
+<div class="chart-panel">
+  <h2>Shift outlook</h2>
+  <div class="panel-desc">Confirmed slots vs. still-open slots, by shift day.</div>
+  <div class="chart-wrap"><canvas id="outlookChart"></canvas></div>
+</div>
+
+<details class="panel" id="pipelinePanel" open>
+  <summary class="panel-summary">
+    <div>
+      <h2>VIP Shift Pipeline<span class="count-pill" id="pipelineCount">0</span></h2>
+      <div class="panel-desc">Every upcoming VIP shift, its fill status, and whether auto-select can cover it.</div>
+    </div>
+    <span class="toggle-btn"><span class="chevron">&#9660;</span> Toggle</span>
+  </summary>
+  <div class="panel-body">
+    <div class="filters">
+      <input class="search-box" id="pipelineSearch" type="text" placeholder="Search business or market&hellip;">
+      <select class="filter-select" id="pipelineMarketFilter"><option value="">All markets</option></select>
+      <select class="filter-select" id="pipelineAutoFilter">
+        <option value="">Auto Select: All</option>
+        <option value="On">Auto Select: On</option>
+        <option value="Off">Auto Select: Off</option>
+      </select>
+      <label class="chk"><input type="checkbox" id="pipelineUnfilledOnly"> Unfilled shifts only</label>
+    </div>
+    <div class="table-scroll">
+      <table id="pipelineTable">
+        <thead>
+          <tr>
+            <th class="sortable" data-sort="date">Shift <span class="arrow">&#9650;</span></th>
+            <th>Business</th>
+            <th>Market</th>
+            <th>Skill</th>
+            <th>Auto Select</th>
+            <th class="sortable" data-sort="gap">Requested / Confirmed <span class="arrow">&#9650;</span></th>
+            <th>Selected Pros</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</details>
+
+<details class="panel" id="outreachPanel" open>
+  <summary class="panel-summary">
+    <div>
+      <h2>Pro Outreach Queue<span class="count-pill" id="outreachCount">0</span></h2>
+      <div class="panel-desc">Pros assigned to a VIP shift who haven't been outreached yet &mdash; soonest shift first.</div>
+    </div>
+    <span class="toggle-btn"><span class="chevron">&#9660;</span> Toggle</span>
+  </summary>
+  <div class="panel-body">
+    <div class="filters">
+      <input class="search-box" id="outreachSearch" type="text" placeholder="Search pro or business&hellip;">
+      <select class="filter-select" id="outreachMarketFilter"><option value="">All markets</option></select>
+      <select class="filter-select" id="outreachTierFilter">
+        <option value="">All urgency</option>
+        <option value="high">&lt;12h out</option>
+        <option value="medium">12&ndash;24h out</option>
+        <option value="ok">24h+ out / already outreached</option>
+      </select>
+      <select class="filter-select" id="outreachVerifiedFilter">
+        <option value="">Verified: All</option>
+        <option value="Verified">Verified only</option>
+        <option value="Unverified">Unverified only</option>
+      </select>
+      <select class="filter-select" id="outreachStatusFilter"><option value="">All outreach statuses</option></select>
+    </div>
+    <div class="table-scroll">
+      <table id="outreachTable">
+        <thead>
+          <tr>
+            <th class="sortable" data-sort="hours">Urgency <span class="arrow">&#9650;</span></th>
+            <th>Pro</th>
+            <th>Phone</th>
+            <th>Business</th>
+            <th class="sortable" data-sort="date">Shift <span class="arrow">&#9650;</span></th>
+            <th>Verified</th>
+            <th>Outreach Status</th>
+            <th>Notes / Agent</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</details>
+
+<details class="panel" id="businessPanel" open>
+  <summary class="panel-summary">
+    <div>
+      <h2>VIP Business Fill Needs<span class="count-pill" id="businessCount">0</span></h2>
+      <div class="panel-desc">Rolled up across the pipeline window &mdash; who's short-staffed, and who's relying on manual fill.</div>
+    </div>
+    <span class="toggle-btn"><span class="chevron">&#9660;</span> Toggle</span>
+  </summary>
+  <div class="panel-body">
+    <div class="filters">
+      <input class="search-box" id="businessSearch" type="text" placeholder="Search business&hellip;">
+      <select class="filter-select" id="businessActionFilter">
+        <option value="">All statuses</option>
+        <option value="fill">Needs fill</option>
+        <option value="manual">Auto-select off</option>
+        <option value="healthy">Healthy</option>
+      </select>
+    </div>
+    <div class="table-scroll">
+      <table id="businessTable">
+        <thead>
+          <tr>
+            <th>Status</th>
+            <th>Business</th>
+            <th>Market</th>
+            <th>Next shift</th>
+            <th># Shifts</th>
+            <th>Requested / Confirmed</th>
+            <th>Auto-select off</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</details>
+
+<footer>Auto-refreshed hourly from the VIP shift and VIP outreach sheets. Urgency tiers are computed in-browser from hours to shift start and outreach status &mdash; thresholds can be tuned without waiting on a data refresh.</footer>
+
+<script>
+// Column order produced by scripts/refresh_vip.py — keep this in sync with SHIFT_COLUMNS there.
+const SCOLS = {
+  shiftId: 0, startDatetime: 1, market: 2, locationName: 3, shiftType: 4,
+  autoSelect: 5, requested: 6, confirmed: 7, selectedPros: 8, shiftUrl: 9,
+};
+// Column order produced by scripts/refresh_vip.py — keep this in sync with OUTREACH_COLUMNS there.
+const OCOLS = {
+  rowKey: 0, proName: 1, proPhone: 2, outreachStatus: 3, verifiedStatus: 4,
+  hoursToStart: 5, startTime: 6, locationName: 7, market: 8, skillset: 9,
+  proId: 10, gigId: 11, notes: 12, agentName: 13,
+};
+
+const SHIFT_ROWS = [[1600688, "2026-07-28 13:00:00", "San Diego, CA", "La Costa Glen - Northside Clubhouse Monterey Dining Room", "Dishwasher", "On", 1, 1, 22, "https://biz.qwick.com/locations/26015/gigs/1600688/applicants"], [1615489, "2026-07-28 13:30:00", "San Francisco-Oakland, CA", "Bon Appetit - OpenAI Mission Bay cafe - MB2", "Dishwasher", "On", 1, 1, 1, "https://biz.qwick.com/locations/26015/gigs/1615489/applicants"], [1599298, "2026-07-28 14:00:00", "San Francisco-Oakland, CA", "Bon Appetit - OpenAI Mission Bay cafe - MB2", "Banquet Server", "Off", 1, 1, 1, "https://biz.qwick.com/locations/26015/gigs/1599298/applicants"], [1589556, "2026-07-28 14:00:00", "Savannah, GA / Hilton Head, SC", "The Marshes of Skidaway Island", "Dishwasher", "On", 1, 1, 75, "https://biz.qwick.com/locations/26015/gigs/1589556/applicants"], [1616910, "2026-07-28 14:00:00", "Phoenix-Mesa, AZ", "Tempe Mission Palms - Tempe Mission Palms Kitchen", "Dishwasher", "On", 1, 1, 1, "https://biz.qwick.com/locations/26015/gigs/1616910/applicants"], [1615746, "2026-07-28 15:00:00", "Boston, MA", "Pleasant Hill Retirement Community", "Dishwasher", "On", 1, 1, 104, "https://biz.qwick.com/locations/26015/gigs/1615746/applicants"], [1614300, "2026-07-28 15:00:00", "Raleigh-Durham, NC", "JB Duke Hotel  - Culinary", "Banquet Cook", "Off", 1, 1, 1, "https://biz.qwick.com/locations/26015/gigs/1614300/applicants"], [1614262, "2026-07-28 16:00:00", "Chicago, IL", "CityGate Hospitality LLC - Hotel Arista-Naperville", "Dishwasher", "On", 1, 1, 67, "https://biz.qwick.com/locations/26015/gigs/1614262/applicants"], [1616557, "2026-07-28 16:00:00", "Phoenix-Mesa, AZ", "Tempe Mission Palms - Tempe Mission Palms Kitchen", "Dishwasher", "On", 1, 1, 20, "https://biz.qwick.com/locations/26015/gigs/1616557/applicants"], [1614873, "2026-07-28 16:00:00", "Raleigh-Durham, NC", "Washington Duke Inn - Culinary", "Dishwasher", "Off", 1, 1, 2, "https://biz.qwick.com/locations/26015/gigs/1614873/applicants"], [1608964, "2026-07-28 16:30:00", "Savannah, GA / Hilton Head, SC", "The Marshes of Skidaway Island", "Dishwasher", "On", 1, 1, 29, "https://biz.qwick.com/locations/26015/gigs/1608964/applicants"], [1599524, "2026-07-28 16:30:00", "San Francisco-Oakland, CA", "Bon Appetit - OpenAI Mission Bay cafe - MB2", "Banquet Server", "Off", 1, 1, 1, "https://biz.qwick.com/locations/26015/gigs/1599524/applicants"], [1614136, "2026-07-28 16:30:00", "Raleigh-Durham, NC", "JB Duke Hotel - Events", "Beer & Wine Bartender", "Off", 1, 1, 4, "https://biz.qwick.com/locations/26015/gigs/1614136/applicants"], [1614795, "2026-07-28 17:00:00", "San Francisco-Oakland, CA", "Bon Appetit - OpenAI Mission Bay cafe - Catering", "Dishwasher", "On", 1, 1, 48, "https://biz.qwick.com/locations/26015/gigs/1614795/applicants"], [1614316, "2026-07-28 17:00:00", "Raleigh-Durham, NC", "JB Duke Hotel  - Culinary", "Dishwasher", "Off", 2, 2, 2, "https://biz.qwick.com/locations/26015/gigs/1614316/applicants"], [1614579, "2026-07-28 11:00:00", "San Francisco-Oakland, CA", "Bon Appetit - Counter Point Cafe", "Dishwasher", "On", 1, 1, 52, "https://biz.qwick.com/locations/26015/gigs/1614579/applicants"], [1605406, "2026-07-28 11:15:00", "San Diego, CA", "La Costa Glen - Southside Lakeside Clubhouse La Palma Dining Room", "Line Cook", "On", 1, 1, 1, "https://biz.qwick.com/locations/26015/gigs/1605406/applicants"], [1615964, "2026-07-28 11:45:00", "San Francisco-Oakland, CA", "Bon Appetit - OpenAI Mission Bay cafe - MB0", "Banquet Server", "On", 1, 1, 45, "https://biz.qwick.com/locations/26015/gigs/1615964/applicants"], [1613499, "2026-07-28 12:00:00", "San Francisco-Oakland, CA", "Bon Appetit - OpenAI Mission Bay cafe - MB2", "Banquet Server", "On", 1, 1, 1, "https://biz.qwick.com/locations/26015/gigs/1613499/applicants"], [1615494, "2026-07-28 12:30:00", "San Francisco-Oakland, CA", "Bon Appetit - OpenAI Mission Bay cafe - MB2", "Dishwasher", "On", 1, 1, 1, "https://biz.qwick.com/locations/26015/gigs/1615494/applicants"], [1590718, "2026-07-29 14:00:00", "Savannah, GA / Hilton Head, SC", "The Marshes of Skidaway Island", "Dishwasher", "On", 1, 1, 24, "https://biz.qwick.com/locations/26015/gigs/1590718/applicants"], [1617058, "2026-07-29 14:30:00", "Phoenix-Mesa, AZ", "Tempe Mission Palms - Tempe Mission Palms Kitchen", "Dishwasher", "On", 1, 1, 3, "https://biz.qwick.com/locations/26015/gigs/1617058/applicants"], [1614301, "2026-07-29 15:00:00", "Raleigh-Durham, NC", "JB Duke Hotel  - Culinary", "Banquet Cook", "Off", 1, 1, 1, "https://biz.qwick.com/locations/26015/gigs/1614301/applicants"], [1615750, "2026-07-29 15:00:00", "Boston, MA", "Pleasant Hill Retirement Community", "Dishwasher", "On", 1, 1, 48, "https://biz.qwick.com/locations/26015/gigs/1615750/applicants"], [1617581, "2026-07-29 16:00:00", "Raleigh-Durham, NC", "Washington Duke Inn - Events", "Banquet Server", "Off", 1, 1, 1, "https://biz.qwick.com/locations/26015/gigs/1617581/applicants"], [1614263, "2026-07-29 16:00:00", "Chicago, IL", "CityGate Hospitality LLC - Hotel Arista-Naperville", "Dishwasher", "On", 1, 1, 30, "https://biz.qwick.com/locations/26015/gigs/1614263/applicants"], [1608965, "2026-07-29 16:30:00", "Savannah, GA / Hilton Head, SC", "The Marshes of Skidaway Island", "Dishwasher", "On", 1, 1, 27, "https://biz.qwick.com/locations/26015/gigs/1608965/applicants"], [1614317, "2026-07-29 17:00:00", "Raleigh-Durham, NC", "JB Duke Hotel  - Culinary", "Dishwasher", "Off", 2, 2, 2, "https://biz.qwick.com/locations/26015/gigs/1614317/applicants"], [1613003, "2026-07-29 05:30:00", "Columbus, OH", "Eurest - Reynolds and Reynolds", "Prep Cook", "On", 1, 1, 3, "https://biz.qwick.com/locations/26015/gigs/1613003/applicants"], [1616914, "2026-07-29 06:00:00", "Asheville, NC", "AM Dining Room - Biltmore Estate", "Server Assistant", "On", 1, 1, 24, "https://biz.qwick.com/locations/26015/gigs/1616914/applicants"], [1613688, "2026-07-29 06:00:00", "St. Louis, MO-IL", "Eden Village Retirement Center - Morrison", "Line Cook", "On", 1, 1, 20, "https://biz.qwick.com/locations/26015/gigs/1613688/applicants"], [1607577, "2026-07-29 06:00:00", "Asheville, NC", "AM Dining Room - Biltmore Estate", "Food Runner", "On", 1, 1, 15, "https://biz.qwick.com/locations/26015/gigs/1607577/applicants"], [1612969, "2026-07-29 06:00:00", "Columbus, OH", "Eurest - Reynolds and Reynolds", "Prep Cook", "On", 1, 1, 3, "https://biz.qwick.com/locations/26015/gigs/1612969/applicants"], [1613088, "2026-07-29 07:00:00", "Phoenix-Mesa, AZ", "Tempe Mission Palms - Tempe Mission Palms Kitchen", "Dishwasher", "On", 1, 1, 7, "https://biz.qwick.com/locations/26015/gigs/1613088/applicants"], [1616044, "2026-07-29 07:00:00", "Raleigh-Durham, NC", "JB Duke Hotel - Restaurants", "FOH Support", "Off", 1, 1, 1, "https://biz.qwick.com/locations/26015/gigs/1616044/applicants"], [1614193, "2026-07-29 07:00:00", "Columbus, OH", "Eurest - Reynolds and Reynolds", "Prep Cook", "On", 1, 1, 3, "https://biz.qwick.com/locations/26015/gigs/1614193/applicants"], [1613429, "2026-07-29 07:00:00", "San Francisco-Oakland, CA", "Bon Appetit - The Anecdote", "Dishwasher", "On", 1, 1, 1, "https://biz.qwick.com/locations/26015/gigs/1613429/applicants"], [1614208, "2026-07-29 07:00:00", "Columbus, OH", "Eurest - Reynolds and Reynolds", "Dishwasher", "On", 1, 1, 94, "https://biz.qwick.com/locations/26015/gigs/1614208/applicants"], [1614651, "2026-07-29 07:30:00", "San Francisco-Oakland, CA", "Bon Appetit - OpenAI Mission Bay cafe - MB2", "Barista", "On", 1, 1, 3, "https://biz.qwick.com/locations/26015/gigs/1614651/applicants"], [1607163, "2026-07-29 08:00:00", "San Francisco-Oakland, CA", "Bon Appetit - OpenAI Mission Bay cafe - MB2", "Banquet Server", "On", 1, 1, 1, "https://biz.qwick.com/locations/26015/gigs/1607163/applicants"], [1614642, "2026-07-29 08:00:00", "San Francisco-Oakland, CA", "Bon Appetit - OpenAI Mission Bay cafe - MB2", "Barista", "On", 1, 1, 1, "https://biz.qwick.com/locations/26015/gigs/1614642/applicants"], [1614648, "2026-07-29 09:00:00", "Raleigh-Durham, NC", "JB Duke Hotel  - Culinary", "Line Cook", "Off", 1, 1, 1, "https://biz.qwick.com/locations/26015/gigs/1614648/applicants"], [1614306, "2026-07-29 09:00:00", "Raleigh-Durham, NC", "JB Duke Hotel  - Culinary", "Dishwasher", "Off", 1, 1, 2, "https://biz.qwick.com/locations/26015/gigs/1614306/applicants"], [1613434, "2026-07-29 09:00:00", "San Francisco-Oakland, CA", "Bon Appetit - Counter Point Cafe", "Line Cook", "On", 1, 1, 1, "https://biz.qwick.com/locations/26015/gigs/1613434/applicants"], [1614347, "2026-07-29 10:00:00", "Nashville, TN", "The Heritage at Brentwood", "Line Cook", "On", 1, 1, 34, "https://biz.qwick.com/locations/26015/gigs/1614347/applicants"], [1615593, "2026-07-29 10:30:00", "St. Louis, MO-IL", "Eden Village Retirement Center - Morrison", "Food Service Worker", "On", 1, 1, 9, "https://biz.qwick.com/locations/26015/gigs/1615593/applicants"], [1590739, "2026-07-29 11:00:00", "Savannah, GA / Hilton Head, SC", "The Marshes of Skidaway Island", "Dishwasher", "On", 1, 1, 26, "https://biz.qwick.com/locations/26015/gigs/1590739/applicants"], [1615965, "2026-07-29 11:45:00", "San Francisco-Oakland, CA", "Bon Appetit - OpenAI Mission Bay cafe - MB0", "Banquet Server", "On", 1, 1, 42, "https://biz.qwick.com/locations/26015/gigs/1615965/applicants"], [1612880, "2026-07-29 12:00:00", "Orlando, FL", "Mystic Dunes Resort & Golf Club", "Prep Cook", "On", 1, 1, 8, "https://biz.qwick.com/locations/26015/gigs/1612880/applicants"], [1617105, "2026-07-29 12:00:00", "Dallas, TX", "The Cedric Frazier Experience Catering Kitchen + Cafe", "Dishwasher", "On", 1, 1, 17, "https://biz.qwick.com/locations/26015/gigs/1617105/applicants"], [1590734, "2026-07-29 12:00:00", "Dallas, TX", "The Cedric Frazier Experience Catering Kitchen + Cafe", "Prep Cook", "On", 1, 1, 7, "https://biz.qwick.com/locations/26015/gigs/1590734/applicants"], [1615592, "2026-07-29 12:00:00", "St. Louis, MO-IL", "Eden Village Retirement Center - Morrison", "Food Service Worker", "On", 2, 2, 58, "https://biz.qwick.com/locations/26015/gigs/1615592/applicants"], [1614892, "2026-07-30 15:00:00", "Raleigh-Durham, NC", "Washington Duke Inn - Culinary", "Stage", "Off", 1, 1, 1, "https://biz.qwick.com/locations/26015/gigs/1614892/applicants"], [1614264, "2026-07-30 16:00:00", "Chicago, IL", "CityGate Hospitality LLC - Hotel Arista-Naperville", "Dishwasher", "On", 1, 1, 79, "https://biz.qwick.com/locations/26015/gigs/1614264/applicants"], [1617443, "2026-07-30 16:00:00", "Nashville, TN", "The Heritage at Brentwood", "Dishwasher", "On", 1, 1, 10, "https://biz.qwick.com/locations/26015/gigs/1617443/applicants"], [1617583, "2026-07-30 16:00:00", "Raleigh-Durham, NC", "Washington Duke Inn - Events", "Banquet Server", "Off", 1, 1, 1, "https://biz.qwick.com/locations/26015/gigs/1617583/applicants"], [1615369, "2026-07-30 16:30:00", "Raleigh-Durham, NC", "JB Duke Hotel - Events", "Beer & Wine Bartender", "Off", 1, 1, 5, "https://biz.qwick.com/locations/26015/gigs/1615369/applicants"], [1615384, "2026-07-30 16:30:00", "Raleigh-Durham, NC", "JB Duke Hotel - Events", "Bartender", "Off", 1, 1, 4, "https://biz.qwick.com/locations/26015/gigs/1615384/applicants"], [1608967, "2026-07-30 17:00:00", "Savannah, GA / Hilton Head, SC", "The Marshes of Skidaway Island", "Dishwasher", "On", 1, 1, 28, "https://biz.qwick.com/locations/26015/gigs/1608967/applicants"], [1614318, "2026-07-30 17:00:00", "Raleigh-Durham, NC", "JB Duke Hotel  - Culinary", "Dishwasher", "Off", 1, 1, 1, "https://biz.qwick.com/locations/26015/gigs/1614318/applicants"], [1613004, "2026-07-30 05:30:00", "Columbus, OH", "Eurest - Reynolds and Reynolds", "Prep Cook", "On", 1, 1, 2, "https://biz.qwick.com/locations/26015/gigs/1613004/applicants"], [1612970, "2026-07-30 06:00:00", "Columbus, OH", "Eurest - Reynolds and Reynolds", "Prep Cook", "On", 1, 1, 3, "https://biz.qwick.com/locations/26015/gigs/1612970/applicants"], [1614211, "2026-07-30 07:00:00", "Columbus, OH", "Eurest - Reynolds and Reynolds", "Dishwasher", "On", 1, 1, 95, "https://biz.qwick.com/locations/26015/gigs/1614211/applicants"], [1614194, "2026-07-30 07:00:00", "Columbus, OH", "Eurest - Reynolds and Reynolds", "Prep Cook", "On", 1, 1, 3, "https://biz.qwick.com/locations/26015/gigs/1614194/applicants"], [1583290, "2026-07-30 07:00:00", "San Francisco-Oakland, CA", "Bon Appetit - The Anecdote", "Dishwasher", "On", 1, 1, 1, "https://biz.qwick.com/locations/26015/gigs/1583290/applicants"], [1614307, "2026-07-30 09:00:00", "Raleigh-Durham, NC", "JB Duke Hotel  - Culinary", "Dishwasher", "Off", 1, 1, 1, "https://biz.qwick.com/locations/26015/gigs/1614307/applicants"], [1615596, "2026-07-30 10:30:00", "St. Louis, MO-IL", "Eden Village Retirement Center - Morrison", "Food Service Worker", "On", 1, 1, 30, "https://biz.qwick.com/locations/26015/gigs/1615596/applicants"], [1591973, "2026-07-30 11:00:00", "Savannah, GA / Hilton Head, SC", "The Marshes of Skidaway Island", "Dishwasher", "On", 1, 1, 24, "https://biz.qwick.com/locations/26015/gigs/1591973/applicants"], [1614583, "2026-07-30 11:00:00", "San Francisco-Oakland, CA", "Bon Appetit - Counter Point Cafe", "Dishwasher", "On", 1, 1, 4, "https://biz.qwick.com/locations/26015/gigs/1614583/applicants"], [1591857, "2026-07-30 12:00:00", "Dallas, TX", "The Cedric Frazier Experience Catering Kitchen + Cafe", "Prep Cook", "On", 1, 1, 96, "https://biz.qwick.com/locations/26015/gigs/1591857/applicants"], [1615595, "2026-07-30 12:00:00", "St. Louis, MO-IL", "Eden Village Retirement Center - Morrison", "Food Service Worker", "On", 2, 2, 48, "https://biz.qwick.com/locations/26015/gigs/1615595/applicants"], [1612882, "2026-07-30 12:00:00", "Orlando, FL", "Mystic Dunes Resort & Golf Club", "Line Cook", "On", 1, 1, 12, "https://biz.qwick.com/locations/26015/gigs/1612882/applicants"], [1617112, "2026-07-30 12:00:00", "Dallas, TX", "The Cedric Frazier Experience Catering Kitchen + Cafe", "Prep Cook", "On", 1, 1, 18, "https://biz.qwick.com/locations/26015/gigs/1617112/applicants"], [1613841, "2026-07-30 12:30:00", "Pittsburgh, PA", "Eurest - BNY Mellon Grant Street", "Event Staff", "On", 2, 2, 14, "https://biz.qwick.com/locations/26015/gigs/1613841/applicants"], [1600689, "2026-07-31 13:00:00", "San Diego, CA", "La Costa Glen - Northside Clubhouse Monterey Dining Room", "Dishwasher", "On", 1, 1, 7, "https://biz.qwick.com/locations/26015/gigs/1600689/applicants"], [1617059, "2026-07-31 14:30:00", "Phoenix-Mesa, AZ", "Tempe Mission Palms - Tempe Mission Palms Kitchen", "Dishwasher", "On", 1, 1, 8, "https://biz.qwick.com/locations/26015/gigs/1617059/applicants"], [1614893, "2026-07-31 15:00:00", "Raleigh-Durham, NC", "Washington Duke Inn - Culinary", "Stage", "Off", 1, 1, 1, "https://biz.qwick.com/locations/26015/gigs/1614893/applicants"], [1614265, "2026-07-31 16:00:00", "Chicago, IL", "CityGate Hospitality LLC - Hotel Arista-Naperville", "Dishwasher", "On", 1, 1, 30, "https://biz.qwick.com/locations/26015/gigs/1614265/applicants"], [1611623, "2026-07-31 16:00:00", "Philadelphia, PA", "Spring Mill Manor", "Dishwasher", "On", 1, 1, 56, "https://biz.qwick.com/locations/26015/gigs/1611623/applicants"], [1614320, "2026-07-31 17:00:00", "Raleigh-Durham, NC", "JB Duke Hotel  - Culinary", "Dishwasher", "Off", 2, 2, 3, "https://biz.qwick.com/locations/26015/gigs/1614320/applicants"], [1608968, "2026-07-31 17:00:00", "Savannah, GA / Hilton Head, SC", "The Marshes of Skidaway Island", "Dishwasher", "On", 1, 1, 26, "https://biz.qwick.com/locations/26015/gigs/1608968/applicants"], [1613005, "2026-07-31 05:30:00", "Columbus, OH", "Eurest - Reynolds and Reynolds", "Prep Cook", "On", 1, 1, 2, "https://biz.qwick.com/locations/26015/gigs/1613005/applicants"], [1615224, "2026-07-31 06:00:00", "Asheville, NC", "AM Dining Room - Biltmore Estate", "Server Assistant", "On", 1, 1, 16, "https://biz.qwick.com/locations/26015/gigs/1615224/applicants"], [1612971, "2026-07-31 06:00:00", "Columbus, OH", "Eurest - Reynolds and Reynolds", "Prep Cook", "On", 1, 1, 4, "https://biz.qwick.com/locations/26015/gigs/1612971/applicants"], [1614195, "2026-07-31 07:00:00", "Columbus, OH", "Eurest - Reynolds and Reynolds", "Prep Cook", "On", 1, 1, 2, "https://biz.qwick.com/locations/26015/gigs/1614195/applicants"], [1614310, "2026-07-31 08:00:00", "Raleigh-Durham, NC", "JB Duke Hotel  - Culinary", "Dishwasher", "Off", 1, 1, 1, "https://biz.qwick.com/locations/26015/gigs/1614310/applicants"], [1617444, "2026-07-31 08:30:00", "Nashville, TN", "The Heritage at Brentwood", "Dishwasher", "On", 1, 1, 9, "https://biz.qwick.com/locations/26015/gigs/1617444/applicants"], [1593416, "2026-07-31 11:00:00", "Savannah, GA / Hilton Head, SC", "The Marshes of Skidaway Island", "Dishwasher", "On", 1, 1, 26, "https://biz.qwick.com/locations/26015/gigs/1593416/applicants"], [1591858, "2026-07-31 12:00:00", "Dallas, TX", "The Cedric Frazier Experience Catering Kitchen + Cafe", "Prep Cook", "On", 1, 1, 79, "https://biz.qwick.com/locations/26015/gigs/1591858/applicants"], [1615986, "2026-08-01 15:00:00", "Philadelphia, PA", "Spring Mill Manor", "Banquet Server", "On", 3, 3, 56, "https://biz.qwick.com/locations/26015/gigs/1615986/applicants"], [1614894, "2026-08-01 15:00:00", "Raleigh-Durham, NC", "Washington Duke Inn - Culinary", "Stage", "Off", 1, 1, 1, "https://biz.qwick.com/locations/26015/gigs/1614894/applicants"], [1612919, "2026-08-01 16:00:00", "Raleigh-Durham, NC", "Washington Duke Inn - Events", "Bartender", "Off", 2, 2, 2, "https://biz.qwick.com/locations/26015/gigs/1612919/applicants"], [1611624, "2026-08-01 16:00:00", "Philadelphia, PA", "Spring Mill Manor", "Dishwasher", "On", 1, 1, 58, "https://biz.qwick.com/locations/26015/gigs/1611624/applicants"], [1614201, "2026-08-01 16:30:00", "Raleigh-Durham, NC", "JB Duke Hotel - Events", "Bartender", "Off", 1, 1, 3, "https://biz.qwick.com/locations/26015/gigs/1614201/applicants"], [1614321, "2026-08-01 17:00:00", "Raleigh-Durham, NC", "JB Duke Hotel  - Culinary", "Dishwasher", "Off", 2, 2, 3, "https://biz.qwick.com/locations/26015/gigs/1614321/applicants"], [1615220, "2026-08-01 06:00:00", "Asheville, NC", "AM Dining Room - Biltmore Estate", "Food Runner", "On", 1, 1, 16, "https://biz.qwick.com/locations/26015/gigs/1615220/applicants"], [1615225, "2026-08-01 06:00:00", "Asheville, NC", "AM Dining Room - Biltmore Estate", "Server Assistant", "On", 2, 2, 16, "https://biz.qwick.com/locations/26015/gigs/1615225/applicants"], [1614311, "2026-08-01 08:00:00", "Raleigh-Durham, NC", "JB Duke Hotel  - Culinary", "Dishwasher", "Off", 1, 1, 1, "https://biz.qwick.com/locations/26015/gigs/1614311/applicants"], [1614864, "2026-08-01 08:00:00", "Raleigh-Durham, NC", "Washington Duke Inn - Culinary", "Dishwasher", "Off", 1, 1, 2, "https://biz.qwick.com/locations/26015/gigs/1614864/applicants"], [1591859, "2026-08-01 12:00:00", "Dallas, TX", "The Cedric Frazier Experience Catering Kitchen + Cafe", "Prep Cook", "On", 1, 1, 8, "https://biz.qwick.com/locations/26015/gigs/1591859/applicants"], [1617114, "2026-08-01 12:00:00", "Dallas, TX", "The Cedric Frazier Experience Catering Kitchen + Cafe", "Prep Cook", "On", 1, 1, 4, "https://biz.qwick.com/locations/26015/gigs/1617114/applicants"], [1615755, "2026-08-02 15:00:00", "Boston, MA", "Pleasant Hill Retirement Community", "Dishwasher", "On", 1, 1, 101, "https://biz.qwick.com/locations/26015/gigs/1615755/applicants"], [1615226, "2026-08-02 06:00:00", "Asheville, NC", "AM Dining Room - Biltmore Estate", "Server Assistant", "On", 2, 2, 17, "https://biz.qwick.com/locations/26015/gigs/1615226/applicants"], [1609003, "2026-08-02 08:00:00", "Savannah, GA / Hilton Head, SC", "The Marshes of Skidaway Island", "Dishwasher", "On", 1, 1, 26, "https://biz.qwick.com/locations/26015/gigs/1609003/applicants"], [1594662, "2026-08-02 08:00:00", "Savannah, GA / Hilton Head, SC", "The Marshes of Skidaway Island", "Dishwasher", "On", 1, 1, 28, "https://biz.qwick.com/locations/26015/gigs/1594662/applicants"], [1617117, "2026-08-02 08:30:00", "Dallas, TX", "The Cedric Frazier Experience Catering Kitchen + Cafe", "Prep Cook", "On", 3, 3, 73, "https://biz.qwick.com/locations/26015/gigs/1617117/applicants"], [1617109, "2026-08-02 10:30:00", "Dallas, TX", "The Cedric Frazier Experience Catering Kitchen + Cafe", "Dishwasher", "On", 1, 1, 4, "https://biz.qwick.com/locations/26015/gigs/1617109/applicants"], [1609139, "2026-08-03 14:00:00", "Savannah, GA / Hilton Head, SC", "The Marshes of Skidaway Island", "Dishwasher", "On", 1, 1, 27, "https://biz.qwick.com/locations/26015/gigs/1609139/applicants"], [1615752, "2026-08-03 15:00:00", "Boston, MA", "Pleasant Hill Retirement Community", "Dishwasher", "On", 1, 1, 85, "https://biz.qwick.com/locations/26015/gigs/1615752/applicants"], [1617445, "2026-08-03 16:00:00", "Nashville, TN", "The Heritage at Brentwood", "Dishwasher", "On", 1, 1, 11, "https://biz.qwick.com/locations/26015/gigs/1617445/applicants"], [1609004, "2026-08-03 17:00:00", "Savannah, GA / Hilton Head, SC", "The Marshes of Skidaway Island", "Dishwasher", "On", 1, 1, 31, "https://biz.qwick.com/locations/26015/gigs/1609004/applicants"], [1600690, "2026-08-03 08:00:00", "San Diego, CA", "La Costa Glen - Southside Lakeside Clubhouse La Palma Dining Room", "Dishwasher", "On", 1, 1, 7, "https://biz.qwick.com/locations/26015/gigs/1600690/applicants"], [1595203, "2026-08-03 11:00:00", "Savannah, GA / Hilton Head, SC", "The Marshes of Skidaway Island", "Dishwasher", "On", 1, 1, 38, "https://biz.qwick.com/locations/26015/gigs/1595203/applicants"], [1617446, "2026-08-04 08:30:00", "Nashville, TN", "The Heritage at Brentwood", "Dishwasher", "On", 1, 1, 11, "https://biz.qwick.com/locations/26015/gigs/1617446/applicants"], [1596187, "2026-08-04 11:00:00", "Savannah, GA / Hilton Head, SC", "The Marshes of Skidaway Island", "Dishwasher", "On", 1, 1, 40, "https://biz.qwick.com/locations/26015/gigs/1596187/applicants"]];
+const OUTREACH_ROWS = [["1612969-559193", "Shunna Haynes", "+15138169749", "Not outreached", "Verified", 12.6, "2026-07-29 06:00:00", "Eurest - Reynolds and Reynolds", "Columbus, OH", "Prep Cook", 559193, 1612969, null, null], ["1613688-934934", "Kristopher Edwards", "+13142968694", "Not outreached", "Unverified", 12.6, "2026-07-29 06:00:00", "Eden Village Retirement Center - Morrison", "St. Louis, MO-IL", "Line Cook", 934934, 1613688, null, null], ["1614208-662448", "Tracy Smith", "+16148005351", "Not outreached", "Unverified", 13.6, "2026-07-29 07:00:00", "Eurest - Reynolds and Reynolds", "Columbus, OH", "Dishwasher", 662448, 1614208, null, null], ["1616044-497975", "Veronica Wilds", "+19195939462", "Not outreached", "Verified", 13.6, "2026-07-29 07:00:00", "JB Duke Hotel - Restaurants", "Raleigh-Durham, NC", "FOH Support", 497975, 1616044, null, null], ["1614651-796128", "Gabriel Salcedo", "+16505213916", "Not outreached", "Verified", 14.1, "2026-07-29 07:30:00", "Bon Appetit - OpenAI Mission Bay cafe - MB2", "San Francisco-Oakland, CA", "Barista", 796128, 1614651, null, null], ["1613373-464773", "Lemuel Murchison", "+14702138704", "Not outreached", "Verified", 15.1, "2026-07-29 08:30:00", "Cuisines - Charter Communications", "Raleigh-Durham, NC", "Line Cook", 464773, 1613373, null, null], ["1614306-1006486", "Juana Lucas", "+13477403829", "Not outreached", "Unverified", 15.6, "2026-07-29 09:00:00", "JB Duke Hotel  - Culinary", "Raleigh-Durham, NC", "Dishwasher", 1006486, 1614306, null, null], ["1615593-864075", "Heather Horvath", "+16182232008", "Not outreached", "Unverified", 17.1, "2026-07-29 10:30:00", "Eden Village Retirement Center - Morrison", "St. Louis, MO-IL", "Food Service Worker", 864075, 1615593, null, null], ["1614581-613689", "Eduardo Martinez", "+13412320134", "Not outreached", "Verified", 17.6, "2026-07-29 11:00:00", "Bon Appetit - Counter Point Cafe", "San Francisco-Oakland, CA", "Dishwasher", 613689, 1614581, null, null], ["1615965-74819", "Stephanie Kent", "+15108809058", "Not outreached", "Verified", 18.35, "2026-07-29 11:45:00", "Bon Appetit - OpenAI Mission Bay cafe - MB0", "San Francisco-Oakland, CA", "Banquet Server", 74819, 1615965, null, null], ["1615592-784965", "Mary Scott", "+16187466635", "Not outreached", "Unverified", 18.6, "2026-07-29 12:00:00", "Eden Village Retirement Center - Morrison", "St. Louis, MO-IL", "Food Service Worker", 784965, 1615592, null, null], ["1615592-910126", "Edward Evans", "+16185097067", "Not outreached", "Unverified", 18.6, "2026-07-29 12:00:00", "Eden Village Retirement Center - Morrison", "St. Louis, MO-IL", "Food Service Worker", 910126, 1615592, null, null], ["1615495-895224", "Kevin Gonzalez", "+16282867333", "Not outreached", "Verified", 19.1, "2026-07-29 12:30:00", "Bon Appetit - OpenAI Mission Bay cafe - MB2", "San Francisco-Oakland, CA", "Dishwasher", 895224, 1615495, null, null], ["1615750-966117", "Robert Banks", "+13392369938", "Not outreached", "Verified", 21.6, "2026-07-29 15:00:00", "Pleasant Hill Retirement Community", "Boston, MA", "Dishwasher", 966117, 1615750, null, null], ["1614263-511340", "Maria Garcia", "+13129076036", "Not outreached", "Verified", 22.6, "2026-07-29 16:00:00", "CityGate Hospitality LLC - Hotel Arista-Naperville", "Chicago, IL", "Dishwasher", 511340, 1614263, null, null], ["1614317-1006486", "Juana Lucas", "+13477403829", "Not outreached", "Unverified", 23.6, "2026-07-29 17:00:00", "JB Duke Hotel  - Culinary", "Raleigh-Durham, NC", "Dishwasher", 1006486, 1614317, null, null], ["1612970-559193", "Shunna Haynes", "+15138169749", "Not outreached", "Verified", 36.6, "2026-07-30 06:00:00", "Eurest - Reynolds and Reynolds", "Columbus, OH", "Prep Cook", 559193, 1612970, null, null], ["1614211-662448", "Tracy Smith", "+16148005351", "Not outreached", "Unverified", 37.6, "2026-07-30 07:00:00", "Eurest - Reynolds and Reynolds", "Columbus, OH", "Dishwasher", 662448, 1614211, null, null], ["1614653-805425", "Carlos Maldonado", "+15107089654", "Not outreached", "Verified", 38.1, "2026-07-30 07:30:00", "Bon Appetit - OpenAI Mission Bay cafe - MB2", "San Francisco-Oakland, CA", "Barista", 805425, 1614653, null, null], ["1613375-464773", "Lemuel Murchison", "+14702138704", "Not outreached", "Verified", 39.1, "2026-07-30 08:30:00", "Cuisines - Charter Communications", "Raleigh-Durham, NC", "Line Cook", 464773, 1613375, null, null], ["1615596-876007", "Andrea Arnold", "+17302630301", "Not outreached", "Unverified", 41.1, "2026-07-30 10:30:00", "Eden Village Retirement Center - Morrison", "St. Louis, MO-IL", "Food Service Worker", 876007, 1615596, null, null], ["1615595-924078", "Tristan Folkner", "+13149152051", "Not outreached", "Unverified", 42.6, "2026-07-30 12:00:00", "Eden Village Retirement Center - Morrison", "St. Louis, MO-IL", "Food Service Worker", 924078, 1615595, null, null], ["1615595-910126", "Edward Evans", "+16185097067", "Not outreached", "Unverified", 42.6, "2026-07-30 12:00:00", "Eden Village Retirement Center - Morrison", "St. Louis, MO-IL", "Food Service Worker", 910126, 1615595, null, null], ["1613841-582877", "Delorse Jackson", "+14125937133", "Not outreached", "Verified", 43.1, "2026-07-30 12:30:00", "Eurest - BNY Mellon Grant Street", "Pittsburgh, PA", "Event Staff", 582877, 1613841, null, null], ["1615722-895224", "Kevin Gonzalez", "+16282867333", "Not outreached", "Verified", 43.1, "2026-07-30 12:30:00", "Bon Appetit - OpenAI Mission Bay cafe - MB2", "San Francisco-Oakland, CA", "Dishwasher", 895224, 1615722, null, null], ["1613841-724739", "Tonique Johnson", "+14125370444", "Not outreached", "Verified", 43.1, "2026-07-30 12:30:00", "Eurest - BNY Mellon Grant Street", "Pittsburgh, PA", "Event Staff", 724739, 1613841, null, null], ["1614892-189810", "Jon Luna", "+19195385046", "Not outreached", "Verified", 45.6, "2026-07-30 15:00:00", "Washington Duke Inn - Culinary", "Raleigh-Durham, NC", "Stage", 189810, 1614892, null, null], ["1614264-701954", "Michael Rawdin", "+17733354444", "Not outreached", "Verified", 46.6, "2026-07-30 16:00:00", "CityGate Hospitality LLC - Hotel Arista-Naperville", "Chicago, IL", "Dishwasher", 701954, 1614264, null, null], ["1615384-142854", "Roselyn Garcia", "+18324867000", "Not outreached", "Verified", 47.1, "2026-07-30 16:30:00", "JB Duke Hotel - Events", "Raleigh-Durham, NC", "Bartender", 142854, 1615384, null, null], ["1615369-382869", "Marietta M", "+16788737581", "Not outreached", "Verified", 47.1, "2026-07-30 16:30:00", "JB Duke Hotel - Events", "Raleigh-Durham, NC", "Beer & Wine Bartender", 382869, 1615369, null, null], ["1614318-260436", "Danielle Jaeger", "+19105156197", "Not outreached", "Unverified", 47.6, "2026-07-30 17:00:00", "JB Duke Hotel  - Culinary", "Raleigh-Durham, NC", "Dishwasher", 260436, 1614318, null, null], ["1612971-559193", "Shunna Haynes", "+15138169749", "Not outreached", "Verified", 60.6, "2026-07-31 06:00:00", "Eurest - Reynolds and Reynolds", "Columbus, OH", "Prep Cook", 559193, 1612971, null, null], ["1614654-670807", "Ireke Udeagha", "+13054821629", "Not outreached", "Verified", 62.1, "2026-07-31 07:30:00", "Bon Appetit - OpenAI Mission Bay cafe - MB2", "San Francisco-Oakland, CA", "Barista", 670807, 1614654, null, null], ["1613376-464773", "Lemuel Murchison", "+14702138704", "Not outreached", "Verified", 63.1, "2026-07-31 08:30:00", "Cuisines - Charter Communications", "Raleigh-Durham, NC", "Line Cook", 464773, 1613376, null, null], ["1614004-401685", "Brandi Valenza", "+14158460194", "Not outreached", "Verified", 65.6, "2026-07-31 11:00:00", "Bon Appetit - LinkedIn SF - FOH", "San Francisco-Oakland, CA", "Beer & Wine Bartender", 401685, 1614004, null, null], ["1614008-552747", "Sarah Scott", "+17072095524", "Not outreached", "Verified", 65.6, "2026-07-31 11:00:00", "Bon Appetit - LinkedIn SF - FOH", "San Francisco-Oakland, CA", "Server Assistant", 552747, 1614008, null, null], ["1614008-590369", "Daniel Velasquez", "+16287895170", "Not outreached", "Verified", 65.6, "2026-07-31 11:00:00", "Bon Appetit - LinkedIn SF - FOH", "San Francisco-Oakland, CA", "Server Assistant", 590369, 1614008, null, null], ["1615723-895224", "Kevin Gonzalez", "+16282867333", "Not outreached", "Verified", 67.1, "2026-07-31 12:30:00", "Bon Appetit - OpenAI Mission Bay cafe - MB2", "San Francisco-Oakland, CA", "Dishwasher", 895224, 1615723, null, null], ["1600689-673470", "Luis Enrique Ruiz Rodríguez", "+17252432514", "Not outreached", "Verified", 67.6, "2026-07-31 13:00:00", "La Costa Glen - Northside Clubhouse Monterey Dining Room", "San Diego, CA", "Dishwasher", 673470, 1600689, null, null], ["1614893-189810", "Jon Luna", "+19195385046", "Not outreached", "Verified", 69.6, "2026-07-31 15:00:00", "Washington Duke Inn - Culinary", "Raleigh-Durham, NC", "Stage", 189810, 1614893, null, null], ["1614265-511340", "Maria Garcia", "+13129076036", "Not outreached", "Verified", 70.6, "2026-07-31 16:00:00", "CityGate Hospitality LLC - Hotel Arista-Naperville", "Chicago, IL", "Dishwasher", 511340, 1614265, null, null], ["1611623-476168", "Marshall Franklin-Ravel", "+12159770344", "Not outreached", "Verified", 70.6, "2026-07-31 16:00:00", "Spring Mill Manor", "Philadelphia, PA", "Dishwasher", 476168, 1611623, null, null], ["1614320-260436", "Danielle Jaeger", "+19105156197", "Not outreached", "Unverified", 71.6, "2026-07-31 17:00:00", "JB Duke Hotel  - Culinary", "Raleigh-Durham, NC", "Dishwasher", 260436, 1614320, null, null]];
+
+// ---- Show the snapshot time in the viewer's own local timezone ----
+(function localizeSnapshot() {
+  const el = document.getElementById('snapshotTag');
+  const iso = el && el.dataset.snapshotUtc;
+  if (!iso) return;
+  const d = new Date(iso);
+  if (isNaN(d)) return;
+  const formatted = d.toLocaleString('en-US', {
+    month: 'short', day: 'numeric', year: 'numeric',
+    hour: 'numeric', minute: '2-digit', timeZoneName: 'short'
+  });
+  el.textContent = `Snapshot · ${formatted}`;
+})();
+
+function parseDate(s) {
+  // Sheet timestamps use unpadded hours ("2026-07-29 7:00:00"), which strict
+  // ISO parsing rejects once the space is swapped for "T" — pad before parsing.
+  const [datePart, timePart] = String(s).split(' ');
+  const paddedTime = timePart ? timePart.split(':').map(p => p.padStart(2, '0')).join(':') : '00:00:00';
+  return new Date(`${datePart}T${paddedTime}`);
+}
+function fmtShiftDate(s) {
+  const d = parseDate(s);
+  if (isNaN(d)) return s;
+  return d.toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
+}
+// Calendar day of a shift, taken directly from the sheet's date part (no
+// timezone conversion) so it can't roll over to an adjacent day depending on
+// the viewer's local timezone.
+function dayKey(shiftDateStr) {
+  return String(shiftDateStr).split(' ')[0];
+}
+function fmtDay(shiftDateStr) {
+  const key = dayKey(shiftDateStr);
+  const d = new Date(`${key}T00:00:00`);
+  if (isNaN(d)) return key;
+  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
+// ---- Urgency: purely a function of hours-to-start and whether outreach is
+// still outstanding — any status other than "Not outreached" is treated as
+// handled. Tune the 12h/24h thresholds here without waiting on a refresh. ----
+function urgencyTier(hours, outreachStatus) {
+  const pending = !outreachStatus || outreachStatus.toLowerCase() === 'not outreached';
+  if (!pending) return 'ok';
+  if (hours == null) return 'medium';
+  if (hours <= 12) return 'high';
+  if (hours <= 24) return 'medium';
+  return 'ok';
+}
+
+// ---- Build one row per VIP shift ----
+function buildShifts(rows) {
+  const shifts = rows.map(r => ({
+    shiftId: r[SCOLS.shiftId],
+    shiftDate: r[SCOLS.startDatetime],
+    market: r[SCOLS.market],
+    business: r[SCOLS.locationName],
+    shiftType: r[SCOLS.shiftType],
+    autoSelect: r[SCOLS.autoSelect],
+    requested: r[SCOLS.requested] || 0,
+    confirmed: r[SCOLS.confirmed] || 0,
+    selectedPros: r[SCOLS.selectedPros],
+    shiftUrl: r[SCOLS.shiftUrl],
+  }));
+  shifts.forEach(s => { s.gap = s.requested - s.confirmed; });
+  shifts.sort((a, b) => parseDate(a.shiftDate) - parseDate(b.shiftDate));
+  return shifts;
+}
+
+// ---- Build one entry per pro-outreach row, joined to the shift's own link
+// when the gig_id matches a shift in SHIFT_ROWS (the outreach sheet's own
+// "shift_url" column loses its hyperlink target on CSV export) ----
+function buildOutreachEntries(rows, shiftUrlById) {
+  const entries = rows.map(r => {
+    const hours = r[OCOLS.hoursToStart];
+    return {
+      row: r,
+      tier: urgencyTier(hours, r[OCOLS.outreachStatus]),
+      shiftUrl: shiftUrlById.get(r[OCOLS.gigId]) || null,
+    };
+  });
+  entries.sort((a, b) => {
+    const ah = a.row[OCOLS.hoursToStart], bh = b.row[OCOLS.hoursToStart];
+    if (ah == null) return 1;
+    if (bh == null) return -1;
+    return ah - bh;
+  });
+  return entries;
+}
+
+// ---- Roll shifts up into per-business fill needs ----
+function buildBusinessRollups(shifts) {
+  const map = new Map();
+  shifts.forEach(s => {
+    if (!map.has(s.business)) {
+      map.set(s.business, {
+        business: s.business, market: s.market, shiftCount: 0,
+        requested: 0, confirmed: 0, autoOffCount: 0, nextShiftDate: null, nextShiftDateStr: null,
+      });
+    }
+    const b = map.get(s.business);
+    b.shiftCount += 1;
+    b.requested += s.requested;
+    b.confirmed += s.confirmed;
+    if (s.autoSelect === 'Off') b.autoOffCount += 1;
+    const d = parseDate(s.shiftDate);
+    if (!b.nextShiftDate || d < b.nextShiftDate) { b.nextShiftDate = d; b.nextShiftDateStr = s.shiftDate; }
+  });
+  const list = Array.from(map.values());
+  list.forEach(b => {
+    b.gap = b.requested - b.confirmed;
+    if (b.gap > 0) b.action = 'fill';
+    else if (b.autoOffCount > 0) b.action = 'manual';
+    else b.action = 'healthy';
+  });
+  list.sort((a, b) => {
+    const order = { fill: 0, manual: 1, healthy: 2 };
+    if (order[a.action] !== order[b.action]) return order[a.action] - order[b.action];
+    return a.nextShiftDate - b.nextShiftDate;
+  });
+  return list;
+}
+
+const ACTION_LABEL = { fill: 'Needs fill', manual: 'Auto-select off', healthy: 'Healthy' };
+const ACTION_BADGE_CLASS = { fill: 'high', manual: 'medium', healthy: 'ok' };
+const TIER_LABEL = { high: '<12h out', medium: '12–24h out', ok: 'Clear' };
+
+function populateSelect(id, values) {
+  const sel = document.getElementById(id);
+  values.forEach(v => {
+    const opt = document.createElement('option');
+    opt.value = v; opt.textContent = v;
+    sel.appendChild(opt);
+  });
+}
+
+function escapeHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+// ============ Render: shift outlook chart ============
+function renderOutlookChart(shifts) {
+  const dayMap = new Map();
+  shifts.forEach(s => {
+    const key = dayKey(s.shiftDate);
+    if (!dayMap.has(key)) dayMap.set(key, { label: fmtDay(s.shiftDate), confirmed: 0, gap: 0 });
+    const entry = dayMap.get(key);
+    entry.confirmed += s.confirmed;
+    entry.gap += Math.max(0, s.gap);
+  });
+  const keys = Array.from(dayMap.keys()).sort();
+  const labels = keys.map(k => dayMap.get(k).label);
+  const confirmedData = keys.map(k => dayMap.get(k).confirmed);
+  const gapData = keys.map(k => dayMap.get(k).gap);
+
+  new Chart(document.getElementById('outlookChart'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Confirmed', data: confirmedData, backgroundColor: '#3F7A4E', stack: 's' },
+        { label: 'Still open', data: gapData, backgroundColor: '#d64545', stack: 's' },
+      ],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: { x: { stacked: true, grid: { display: false } }, y: { stacked: true, beginAtZero: true, ticks: { precision: 0 } } },
+      plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } },
+    },
+  });
+}
+
+// ============ Render: Pipeline table ============
+let pipelineSort = { key: 'date', dir: 1 };
+function renderPipeline(shifts) {
+  const tbody = document.querySelector('#pipelineTable tbody');
+  const search = document.getElementById('pipelineSearch').value.trim().toLowerCase();
+  const market = document.getElementById('pipelineMarketFilter').value;
+  const auto = document.getElementById('pipelineAutoFilter').value;
+  const unfilledOnly = document.getElementById('pipelineUnfilledOnly').checked;
+
+  let rows = shifts.filter(s => {
+    if (unfilledOnly && s.gap <= 0) return false;
+    if (search && !(s.business.toLowerCase().includes(search) || s.market.toLowerCase().includes(search))) return false;
+    if (market && s.market !== market) return false;
+    if (auto && s.autoSelect !== auto) return false;
+    return true;
+  });
+
+  rows = rows.slice().sort((a, b) => {
+    let cmp = 0;
+    if (pipelineSort.key === 'date') cmp = parseDate(a.shiftDate) - parseDate(b.shiftDate);
+    else if (pipelineSort.key === 'gap') cmp = b.gap - a.gap;
+    return cmp * pipelineSort.dir;
+  });
+
+  document.getElementById('pipelineCount').textContent = rows.length;
+
+  if (!rows.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="7">No shifts match these filters.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map(s => {
+    const gapClass = s.gap > 0 ? 'short' : (s.gap === 0 ? 'exact' : 'buffer');
+    const gapLabel = s.gap > 0 ? `${s.requested} / ${s.confirmed} (${s.gap} open)` : `${s.requested} / ${s.confirmed}`;
+    const business = s.shiftUrl
+      ? `<a class="biz-link" href="${escapeHtml(s.shiftUrl)}" target="_blank" rel="noopener">${escapeHtml(s.business)}</a>`
+      : escapeHtml(s.business);
+    return `<tr>
+      <td>${fmtShiftDate(s.shiftDate)}</td>
+      <td>${business}</td>
+      <td>${escapeHtml(s.market)}</td>
+      <td>${escapeHtml(s.shiftType)}</td>
+      <td>${escapeHtml(s.autoSelect)}</td>
+      <td><span class="gap-badge ${gapClass}">${gapLabel}</span></td>
+      <td>${s.selectedPros != null ? s.selectedPros : '&mdash;'}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ============ Render: Outreach queue table ============
+let outreachSort = { key: 'hours', dir: 1 };
+function renderOutreach(entries) {
+  const tbody = document.querySelector('#outreachTable tbody');
+  const search = document.getElementById('outreachSearch').value.trim().toLowerCase();
+  const market = document.getElementById('outreachMarketFilter').value;
+  const tier = document.getElementById('outreachTierFilter').value;
+  const verified = document.getElementById('outreachVerifiedFilter').value;
+  const status = document.getElementById('outreachStatusFilter').value;
+
+  let rows = entries.filter(e => {
+    const r = e.row;
+    if (tier && e.tier !== tier) return false;
+    if (verified && r[OCOLS.verifiedStatus] !== verified) return false;
+    if (status && r[OCOLS.outreachStatus] !== status) return false;
+    if (market && r[OCOLS.market] !== market) return false;
+    if (search && !(String(r[OCOLS.proName]).toLowerCase().includes(search) || String(r[OCOLS.locationName]).toLowerCase().includes(search))) return false;
+    return true;
+  });
+
+  rows = rows.slice().sort((a, b) => {
+    let cmp = 0;
+    if (outreachSort.key === 'hours') {
+      const ah = a.row[OCOLS.hoursToStart], bh = b.row[OCOLS.hoursToStart];
+      cmp = (ah == null ? Infinity : ah) - (bh == null ? Infinity : bh);
+    } else if (outreachSort.key === 'date') {
+      cmp = parseDate(a.row[OCOLS.startTime]) - parseDate(b.row[OCOLS.startTime]);
+    }
+    return cmp * outreachSort.dir;
+  });
+
+  document.getElementById('outreachCount').textContent = rows.length;
+
+  if (!rows.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="8">No pros match these filters — nice and quiet.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map(e => {
+    const r = e.row;
+    const hours = r[OCOLS.hoursToStart];
+    const phone = r[OCOLS.proPhone];
+    const verifiedVal = r[OCOLS.verifiedStatus];
+    const verifiedClass = verifiedVal === 'Verified' ? 'ok' : 'gray';
+    const outreachVal = r[OCOLS.outreachStatus];
+    const outreachClass = e.tier === 'ok' ? 'ok' : (e.tier === 'high' ? 'high' : 'medium');
+    const shiftCell = e.shiftUrl
+      ? `<a class="shift-link" href="${escapeHtml(e.shiftUrl)}" target="_blank" rel="noopener">${fmtShiftDate(r[OCOLS.startTime])} &#8599;</a>`
+      : fmtShiftDate(r[OCOLS.startTime]);
+    const notesAgent = [r[OCOLS.notes], r[OCOLS.agentName]].filter(Boolean).join(' &middot; ') || '&mdash;';
+    return `<tr>
+      <td><span class="badge ${e.tier === 'ok' ? 'ok' : e.tier}">${TIER_LABEL[e.tier]}</span><div class="sub-line">${hours != null ? hours.toFixed(1) + 'h' : '&mdash;'}</div></td>
+      <td>${escapeHtml(r[OCOLS.proName])}</td>
+      <td>${phone ? `<a class="tel-link" href="tel:${escapeHtml(phone)}">${escapeHtml(phone)}</a>` : '&mdash;'}</td>
+      <td>${escapeHtml(r[OCOLS.locationName])}<div class="sub-line">${escapeHtml(r[OCOLS.market])}</div></td>
+      <td>${shiftCell}</td>
+      <td><span class="badge ${verifiedClass}">${escapeHtml(verifiedVal) || '&mdash;'}</span></td>
+      <td><span class="badge ${outreachClass}">${escapeHtml(outreachVal) || '&mdash;'}</span></td>
+      <td>${notesAgent}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ============ Render: Business rollup table ============
+function renderBusinesses(rollups) {
+  const tbody = document.querySelector('#businessTable tbody');
+  const search = document.getElementById('businessSearch').value.trim().toLowerCase();
+  const action = document.getElementById('businessActionFilter').value;
+
+  let rows = rollups.filter(b => {
+    if (search && !b.business.toLowerCase().includes(search)) return false;
+    if (action && b.action !== action) return false;
+    return true;
+  });
+
+  document.getElementById('businessCount').textContent = rows.length;
+
+  if (!rows.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="7">No businesses match these filters.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map(b => `<tr>
+      <td><span class="badge ${ACTION_BADGE_CLASS[b.action]}">${ACTION_LABEL[b.action]}</span></td>
+      <td>${escapeHtml(b.business)}</td>
+      <td>${escapeHtml(b.market)}</td>
+      <td>${b.nextShiftDateStr ? fmtShiftDate(b.nextShiftDateStr) : '&mdash;'}</td>
+      <td>${b.shiftCount}</td>
+      <td>${b.requested} / ${b.confirmed}</td>
+      <td>${b.autoOffCount || '&mdash;'}</td>
+    </tr>`).join('');
+}
+
+// ============ KPIs + alert banner ============
+function renderKPIs(shifts, entries) {
+  const totalRequested = shifts.reduce((s, x) => s + x.requested, 0);
+  const totalConfirmed = shifts.reduce((s, x) => s + x.confirmed, 0);
+  const unfilled = shifts.reduce((s, x) => s + Math.max(0, x.gap), 0);
+  const unfilledShifts = shifts.filter(x => x.gap > 0).length;
+
+  const urgent = entries.filter(e => e.tier === 'high');
+  const watch = entries.filter(e => e.tier === 'medium');
+  const unverified = entries.filter(e => e.row[OCOLS.verifiedStatus] === 'Unverified');
+  const autoOffShifts = shifts.filter(s => s.autoSelect === 'Off');
+
+  document.getElementById('kpiShifts').textContent = shifts.length;
+  document.getElementById('kpiShiftsSub').textContent = `${totalRequested} requested, ${totalConfirmed} confirmed`;
+
+  document.getElementById('kpiUnfilled').textContent = unfilled;
+  document.getElementById('kpiUnfilledSub').textContent = `across ${unfilledShifts} shift${unfilledShifts !== 1 ? 's' : ''}`;
+
+  document.getElementById('kpiUrgent').textContent = urgent.length;
+  document.getElementById('kpiUrgentSub').textContent = 'call now';
+
+  document.getElementById('kpiWatch').textContent = watch.length;
+  document.getElementById('kpiWatchSub').textContent = 'call soon';
+
+  document.getElementById('kpiUnverified').textContent = unverified.length;
+  document.getElementById('kpiUnverifiedSub').textContent = 'confirm contact info';
+
+  document.getElementById('kpiAutoOff').textContent = autoOffShifts.length;
+  document.getElementById('kpiAutoOffSub').textContent = 'no auto-fill safety net';
+
+  const banner = document.getElementById('urgentBanner');
+  const bannerText = document.getElementById('urgentBannerText');
+  if (urgent.length) {
+    bannerText.textContent = `${urgent.length} pro${urgent.length !== 1 ? 's' : ''} need outreach in the next 12 hours before their shift starts.`;
+    banner.classList.add('show');
+  } else {
+    banner.classList.remove('show');
+  }
+}
+
+// ============ Wire up ============
+const shifts = buildShifts(SHIFT_ROWS);
+const rollups = buildBusinessRollups(shifts);
+const shiftUrlById = new Map(SHIFT_ROWS.map(r => [r[SCOLS.shiftId], r[SCOLS.shiftUrl]]));
+const outreachEntries = buildOutreachEntries(OUTREACH_ROWS, shiftUrlById);
+
+const shiftMarkets = Array.from(new Set(SHIFT_ROWS.map(r => r[SCOLS.market]))).sort();
+populateSelect('pipelineMarketFilter', shiftMarkets);
+const outreachMarkets = Array.from(new Set(OUTREACH_ROWS.map(r => r[OCOLS.market]))).sort();
+populateSelect('outreachMarketFilter', outreachMarkets);
+const outreachStatuses = Array.from(new Set(OUTREACH_ROWS.map(r => r[OCOLS.outreachStatus]).filter(Boolean))).sort();
+populateSelect('outreachStatusFilter', outreachStatuses);
+
+function rerenderAll() {
+  renderPipeline(shifts);
+  renderOutreach(outreachEntries);
+  renderBusinesses(rollups);
+}
+
+['pipelineSearch', 'pipelineMarketFilter', 'pipelineAutoFilter', 'pipelineUnfilledOnly'].forEach(id => {
+  document.getElementById(id).addEventListener('input', () => renderPipeline(shifts));
+});
+['outreachSearch', 'outreachMarketFilter', 'outreachTierFilter', 'outreachVerifiedFilter', 'outreachStatusFilter'].forEach(id => {
+  document.getElementById(id).addEventListener('input', () => renderOutreach(outreachEntries));
+});
+['businessSearch', 'businessActionFilter'].forEach(id => {
+  document.getElementById(id).addEventListener('input', () => renderBusinesses(rollups));
+});
+
+document.querySelectorAll('#pipelineTable th.sortable').forEach(th => {
+  th.addEventListener('click', () => {
+    const key = th.dataset.sort;
+    pipelineSort.dir = (pipelineSort.key === key) ? -pipelineSort.dir : 1;
+    pipelineSort.key = key;
+    renderPipeline(shifts);
+  });
+});
+document.querySelectorAll('#outreachTable th.sortable').forEach(th => {
+  th.addEventListener('click', () => {
+    const key = th.dataset.sort;
+    outreachSort.dir = (outreachSort.key === key) ? -outreachSort.dir : 1;
+    outreachSort.key = key;
+    renderOutreach(outreachEntries);
+  });
+});
+
+renderKPIs(shifts, outreachEntries);
+renderOutlookChart(shifts);
+rerenderAll();
+</script>
+</body>
+</html>

@@ -137,11 +137,16 @@
 
 <nav class="top-tabs" id="topTabs">
   <button class="top-tab" data-tab="bf5">Business First 5</button>
+  <button class="top-tab" data-tab="vip">VIP</button>
   <button class="top-tab" data-tab="magic">Magic Team Special Tasks</button>
 </nav>
 
 <section class="tab-panel" id="tab-bf5">
   <iframe class="embed-frame" data-src="index.html" title="Business First 5 Shifts Dashboard"></iframe>
+</section>
+
+<section class="tab-panel" id="tab-vip">
+  <iframe class="embed-frame" data-src="vip-outreach.html" title="VIP Pro Outreach Dashboard"></iframe>
 </section>
 
 <section class="tab-panel" id="tab-magic">
@@ -215,13 +220,13 @@ function loadFrame(iframe) {
 function activateTopTab(id) {
   document.querySelectorAll('#topTabs .top-tab').forEach(el => el.classList.toggle('active', el.dataset.tab === id));
   document.querySelectorAll('.tab-panel').forEach(el => el.classList.toggle('active', el.id === 'tab-' + id));
-  if (id === 'bf5') {
-    loadFrame(document.querySelector('#tab-bf5 iframe'));
-    setHash(id);
-  } else {
+  if (id === 'magic') {
     const activeSub = document.querySelector('#magicSubTabs .sub-tab.active');
     if (activeSub) loadFrame(document.querySelector('#subpanel-' + activeSub.dataset.subtab + ' iframe'));
     setHash(id, activeSub && activeSub.dataset.subtab);
+  } else {
+    loadFrame(document.querySelector('#tab-' + id + ' iframe'));
+    setHash(id);
   }
 }
 
@@ -229,7 +234,7 @@ document.querySelectorAll('#topTabs .top-tab').forEach(btn => {
   btn.addEventListener('click', () => activateTopTab(btn.dataset.tab));
 });
 
-// ---- Shareable deep links: #bf5, #magic, or #magic/housekeeping ----
+// ---- Shareable deep links: #bf5, #vip, #magic, or #magic/housekeeping ----
 function setHash(top, sub) {
   const next = '#' + top + (sub ? '/' + sub : '');
   if (location.hash !== next) history.replaceState(null, '', next);
@@ -240,6 +245,8 @@ function routeFromHash() {
   if (top === 'magic') {
     activateTopTab('magic');
     if (sub && document.querySelector(`.sub-tab[data-subtab="${sub}"]`)) activateSubTab(sub);
+  } else if (top && document.querySelector(`#topTabs .top-tab[data-tab="${top}"]`)) {
+    activateTopTab(top);
   } else {
     activateTopTab('bf5');
   }

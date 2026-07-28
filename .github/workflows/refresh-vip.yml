@@ -1,0 +1,38 @@
+name: Refresh VIP dashboard from Google Sheet
+
+on:
+  schedule:
+    - cron: "35 * * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: refresh-vip-dashboard
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Refresh vip-outreach.html from the sheets
+        run: python3 scripts/refresh_vip.py
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "shift-dashboard-bot"
+          git config user.email "actions@users.noreply.github.com"
+          if git diff --quiet -- vip-outreach.html; then
+            echo "No data changes."
+            exit 0
+          fi
+          git add vip-outreach.html
+          git commit -m "Auto-refresh VIP dashboard data from sheet"
+          git push
