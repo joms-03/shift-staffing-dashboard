@@ -76,7 +76,7 @@
 
   .embed-frame {
     display: block; width: 100%; border: 0; background: var(--bg);
-    min-height: 300px;
+    min-height: clamp(360px, 65vh, 760px);
   }
   .embed-loading {
     display: flex; align-items: center; justify-content: center;
@@ -261,20 +261,38 @@ function activateSubTab(id) {
 
 // ---- Lazy-load + auto-resize iframes so embedded pages don't get a nested scrollbar ----
 function loadFrame(iframe) {
-  if (!iframe || iframe.src) return;
-  iframe.src = iframe.dataset.src;
+  if (!iframe || iframe.dataset.loaded === 'true') return;
+  iframe.dataset.loaded = 'true';
+  let interval;
   const resize = () => {
     try {
       const doc = iframe.contentWindow.document;
-      iframe.style.height = doc.documentElement.scrollHeight + 'px';
+      const height = Math.max(doc.documentElement.scrollHeight, doc.body ? doc.body.scrollHeight : 0);
+      if (height > 0) iframe.style.height = Math.ceil(height) + 'px';
     } catch (e) { /* not expected same-origin, but don't break the tab if it happens */ }
   };
   iframe.addEventListener('load', () => {
     resize();
     let tries = 0;
-    const interval = setInterval(() => { resize(); if (++tries > 10) clearInterval(interval); }, 300);
+    clearInterval(interval);
+    interval = setInterval(() => { resize(); if (++tries > 20) clearInterval(interval); }, 250);
+    iframe.contentWindow.postMessage({ type: 'qwick:request-frame-height' }, '*');
   });
+  iframe.src = iframe.dataset.src;
+  requestAnimationFrame(resize);
 }
+
+// Embedded dashboards also report their own height. This closes the fast local-file
+// load race and keeps the frame in sync as tables, images, and panels change size.
+window.addEventListener('message', event => {
+  const data = event.data;
+  if (!data || data.type !== 'qwick:frame-height') return;
+  const iframe = [...document.querySelectorAll('.embed-frame')]
+    .find(candidate => candidate.contentWindow === event.source);
+  const height = Number(data.height);
+  if (!iframe || !Number.isFinite(height) || height < 200 || height > 50000) return;
+  iframe.style.height = Math.ceil(height) + 'px';
+});
 
 // ---- Top-level tab switching ----
 function activateTopTab(id) {

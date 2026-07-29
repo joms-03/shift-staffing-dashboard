@@ -1085,6 +1085,30 @@ rerenderAll();
     station.addEventListener('mouseleave', () => { stationScene.style.transform = ''; });
   }
 })();
+
+// Keep the containing dashboard hub sized to this page, including local file previews.
+(function syncFrameHeight() {
+  if (window.self === window.top) return;
+  const reportHeight = () => {
+    const height = Math.max(
+      document.documentElement.scrollHeight,
+      document.body ? document.body.scrollHeight : 0
+    );
+    window.parent.postMessage({ type: 'qwick:frame-height', height }, '*');
+  };
+  window.addEventListener('load', reportHeight);
+  window.addEventListener('resize', reportHeight);
+  window.addEventListener('message', event => {
+    if (event.source === window.parent && event.data && event.data.type === 'qwick:request-frame-height') {
+      reportHeight();
+    }
+  });
+  if ('ResizeObserver' in window) {
+    window.__qwickFrameResizeObserver = new ResizeObserver(reportHeight);
+    window.__qwickFrameResizeObserver.observe(document.documentElement);
+  }
+  requestAnimationFrame(reportHeight);
+})();
 </script>
 </body>
 </html>
