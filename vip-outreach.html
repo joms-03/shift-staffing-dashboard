@@ -287,12 +287,7 @@ if (window.self === window.top) {
   /* ---- Floating 3D panda bartender for the VIP outreach desk ---- */
   .station {
     position: absolute; top: -4px; right: 0; width: 260px; height: 222px; z-index: 500;
-    cursor: pointer; perspective: 800px; isolation: isolate;
-  }
-  .station:focus-visible {
-    outline: 3px solid rgba(63,122,78,.34);
-    outline-offset: 4px;
-    border-radius: 28px;
+    perspective: 800px; isolation: isolate;
   }
   .station::before {
     content: ''; position: absolute; inset: 22px 28px 7px;
@@ -340,15 +335,6 @@ if (window.self === window.top) {
     0%, 100% { opacity: .25; transform: translateY(6px) scale(.8); }
     50% { opacity: .82; transform: translateY(-9px) scale(1.18); }
   }
-
-  .station-bubble {
-    position: absolute; top: 6px; right: 2px; transform: translateY(-8px) scale(.92); background: #fff;
-    border: 1px solid var(--border); border-radius: 14px; padding: 8px 13px; font-size: 12px; font-weight: 700;
-    white-space: nowrap; color: var(--text); box-shadow: 0 14px 24px -14px rgba(38,36,31,.35);
-    opacity: 0; transition: opacity .3s ease, transform .3s ease; font-family: -apple-system, sans-serif; z-index: 10;
-  }
-  .station-bubble::after { content: ''; position: absolute; top: 100%; right: 30px; border: 6px solid transparent; border-top-color: #fff; }
-  .station-bubble.show { opacity: 1; transform: translateY(0) scale(1); }
 
   @media (max-width: 760px) {
     header.page-head { min-height: 0; padding-right: 0; }
@@ -423,8 +409,7 @@ if (window.self === window.top) {
     </svg>
     <div class="subtitle">Upcoming shifts at VIP businesses, and which assigned pros still need an outreach call before their shift starts &middot; built from the <a class="inline-link" href="https://docs.google.com/spreadsheets/d/1b4Le5-0Uev8ji9ziCcvSh1MOERKWqeAwZyiPj8RtBkc/edit?gid=849611260#gid=849611260" target="_blank" rel="noopener">VIP shift sheet</a> and the <a class="inline-link" href="https://docs.google.com/spreadsheets/d/1k5oRyKF4RfMs9pvB7WVGLICKM6R-4MI10ZbTvk76PPw/edit?gid=0#gid=0" target="_blank" rel="noopener">VIP outreach sheet</a> &middot; see also the <a class="inline-link" href="qwick-dashboard.html" target="_top">Qwick Magic Team Dashboard</a></div>
   </div>
-  <div class="station" id="station" role="button" tabindex="0" aria-label="VIP panda bartender assistant. Activate for the next queue tip.">
-    <div class="station-bubble" id="stationBubble" aria-live="polite">Hi! 👋</div>
+  <div class="station" id="station" aria-hidden="true">
     <div class="station-scene" id="stationScene" aria-hidden="true">
       <span class="panda-shadow"></span>
       <div class="panda-mascot">
@@ -1044,37 +1029,11 @@ renderKPIs(shifts, outreachEntries);
 renderOutlookChart(shifts);
 rerenderAll();
 
-// ---- Panda reacts to the real queue, tilts toward the cursor, and cycles tips ----
+// ---- Panda gently tilts toward the cursor ----
 (function () {
-  const urgentCount = outreachEntries.filter(e => e.tier === 'high').length;
-  const watchCount = outreachEntries.filter(e => e.tier === 'medium').length;
-  const messages = [];
-  if (urgentCount > 0) messages.push(`${urgentCount} to call right now! 🔔`);
-  if (watchCount > 0) messages.push(`${watchCount} coming up in the next day`);
-  if (!messages.length) messages.push('All caught up here! ✅');
-  messages.push('Shaking things up 🍹');
-  messages.push('Soonest shift first, always.');
-
-  const bubble = document.getElementById('stationBubble');
   const station = document.getElementById('station');
   const stationScene = document.getElementById('stationScene');
   if (!station) return;
-  let msgIndex = 0;
-  function showMessage(i) {
-    bubble.classList.remove('show');
-    setTimeout(() => { bubble.textContent = messages[i % messages.length]; bubble.classList.add('show'); }, 180);
-  }
-  setTimeout(() => showMessage(0), 700);
-
-  station.addEventListener('click', () => {
-    msgIndex += 1;
-    showMessage(msgIndex);
-  });
-  station.addEventListener('keydown', (e) => {
-    if (e.key !== 'Enter' && e.key !== ' ') return;
-    e.preventDefault();
-    station.click();
-  });
   if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
     station.addEventListener('mousemove', (e) => {
       const rect = station.getBoundingClientRect();
