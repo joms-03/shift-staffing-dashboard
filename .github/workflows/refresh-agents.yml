@@ -1,0 +1,52 @@
+name: Refresh agent online status on Qwick dashboard
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: refresh-agents-dashboard
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install google-auth google-api-python-client tzdata
+
+      - name: Write DTR service account key
+        run: echo "$DTR_SERVICE_ACCOUNT_JSON" > /tmp/dtr-service-account.json
+        env:
+          DTR_SERVICE_ACCOUNT_JSON: ${{ secrets.DTR_SERVICE_ACCOUNT_JSON }}
+
+      - name: Refresh qwick-dashboard.html from the schedule and DTR sheets
+        run: python3 scripts/refresh_agents.py
+        env:
+          DTR_SERVICE_ACCOUNT_KEY_PATH: /tmp/dtr-service-account.json
+
+      - name: Remove DTR service account key
+        if: always()
+        run: rm -f /tmp/dtr-service-account.json
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "shift-dashboard-bot"
+          git config user.email "actions@users.noreply.github.com"
+          if git diff --quiet -- qwick-dashboard.html; then
+            echo "No data changes."
+            exit 0
+          fi
+          git add qwick-dashboard.html
+          git commit -m "Auto-refresh agent online status on Qwick dashboard"
+          git push

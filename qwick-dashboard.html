@@ -92,6 +92,30 @@
     display: block;
     margin-bottom: 8px;
   }
+
+  .agent-status-bar {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    padding: 7px 28px; background: var(--green-bg); border-bottom: 1px solid var(--border);
+    font-size: 12px;
+  }
+  .agent-status-bar.empty { display: none; }
+  .live-dot {
+    width: 7px; height: 7px; border-radius: 50%; background: var(--accent); flex-shrink: 0;
+    animation: liveDotPulse 2s infinite;
+  }
+  @keyframes liveDotPulse {
+    0% { box-shadow: 0 0 0 0 rgba(63,122,78,.45); }
+    70% { box-shadow: 0 0 0 6px rgba(63,122,78,0); }
+    100% { box-shadow: 0 0 0 0 rgba(63,122,78,0); }
+  }
+  .agent-status-label { font-weight: 700; color: var(--accent); white-space: nowrap; }
+  .agent-chip-row { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+  .agent-chip {
+    background: var(--card); border: 1px solid var(--border); border-radius: 20px;
+    padding: 2px 10px; color: var(--text); font-weight: 600; white-space: nowrap; font-size: 11.5px;
+  }
+  .agent-chip .until { color: var(--muted); font-weight: 500; }
+  .agent-status-snapshot { color: var(--muted); font-size: 10.5px; white-space: nowrap; margin-left: auto; }
 </style>
 </head>
 <body>
@@ -135,6 +159,13 @@
   <div class="subtitle">One place for Business First 5 and every Magic Team special-task dashboard.</div>
 </header>
 
+<div class="agent-status-bar" id="agentStatusBar">
+  <span class="live-dot"></span>
+  <span class="agent-status-label">Online now</span>
+  <div class="agent-chip-row" id="agentChipRow"></div>
+  <span class="agent-status-snapshot" id="agentSnapshot" data-snapshot-utc="2026-07-28T23:46:03Z"></span>
+</div>
+
 <nav class="top-tabs" id="topTabs">
   <button class="top-tab" data-tab="bf5">Business First 5</button>
   <button class="top-tab" data-tab="vip">VIP</button>
@@ -157,6 +188,35 @@
 <footer class="hub-foot">Each tab loads its own dashboard, which keeps refreshing on its own schedule &mdash; nothing here changes that.</footer>
 
 <script>
+// ---- Who's online: Pro Success / MOPS agents currently clocked in ----
+// Populated by scripts/refresh_agents.py from the Magic Schedule sheet
+// (who's scheduled today, in EST) cross-checked against the DTR sheet
+// (who's actually clocked in right now). Only agents who are both
+// scheduled today and currently clocked in appear here.
+const AGENT_STATUS = [{"name": "Joms", "until": "9:00 PM"}];
+
+function escapeHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+(function renderAgentStatus() {
+  const bar = document.getElementById('agentStatusBar');
+  const row = document.getElementById('agentChipRow');
+  if (!AGENT_STATUS.length) { bar.classList.add('empty'); return; }
+  row.innerHTML = AGENT_STATUS.map(a =>
+    `<span class="agent-chip">${escapeHtml(a.name)} <span class="until">until ${escapeHtml(a.until)} EST</span></span>`
+  ).join('');
+
+  const snap = document.getElementById('agentSnapshot');
+  const iso = snap.dataset.snapshotUtc;
+  if (iso) {
+    const d = new Date(iso);
+    if (!isNaN(d)) {
+      snap.textContent = 'as of ' + d.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' });
+    }
+  }
+})();
+
 // Add a new Magic Team special-task dashboard by adding one entry here.
 // `src: null` renders a "coming soon" sub-tab with no iframe yet.
 const MAGIC_TASKS = [
