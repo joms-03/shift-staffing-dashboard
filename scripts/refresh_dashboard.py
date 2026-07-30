@@ -3,6 +3,8 @@
 date) inside index.html:
 
 - SEC1/SEC2/SEC3: the 'Daily Shift Metrics' tab of the shift staffing sheet.
+- SHIFT_LINK_ROWS: exact location and shift IDs from the source import tab,
+  used by every clickable Business name.
 - REVIEW_ROWS: the 'BF5 Pros to Review' tab (ops-curated) — full pipeline,
   drives the Pro Outreach Queue.
 - OUTREACH_ROWS: the 'BF5 7-Day Review' tab — comprehensive near-term
@@ -21,6 +23,7 @@ SHIFT_SHEET_ID = "1Ry1cozuvFYRYPv8dg449WaC2mDykAtScb1R1JLmGbjM"
 SHIFT_GID = "2006814828"
 REVIEW_GID = "1635271142"
 SEVENDAY_GID = "1327008017"
+RAW_SHIFT_GID = "165226170"
 
 HEADERS = {
     "SEC1": ("Business Name", "Date", "Skill", "Requested", "Confirmed", "Unfilled",
@@ -81,6 +84,10 @@ PRO_COLUMNS = [
     "no_shows_last_30_days", "distance_from_pro_last_seen_to_business_miles",
     "pro_last_seen_at", "confirmation_timestamp", "selection_source",
     "pro_phone_number",
+]
+SHIFT_LINK_COLUMNS = [
+    "business_name", "location_id", "shift_id", "shift_date", "skill",
+    "requested_pros", "confirmed_pros",
 ]
 INT_COLS = {
     "location_id", "shift_id", "requested_pros", "confirmed_pros", "pro_id",
@@ -193,6 +200,20 @@ def parse_pro_rows(rows):
     return out
 
 
+def parse_shift_link_rows(rows):
+    header_idx = next(i for i, r in enumerate(rows) if r and r[0] == "business_name")
+    header = rows[header_idx]
+    idx = {name: i for i, name in enumerate(header)}
+    records = [r for r in rows[header_idx + 1:] if r and r[0]]
+    out = []
+    for r in records:
+        out.append([
+            coerce(col, r[idx[col]] if idx.get(col, -1) < len(r) else "")
+            for col in SHIFT_LINK_COLUMNS
+        ])
+    return out
+
+
 def validate(name, value):
     if not value:
         raise SystemExit(f"Refusing to update: {name} came back empty")
@@ -214,6 +235,9 @@ def main():
     sevenday_rows = parse_pro_rows(fetch_rows(SHIFT_SHEET_ID, SEVENDAY_GID))
     validate("OUTREACH_ROWS", sevenday_rows)
 
+    shift_link_rows = parse_shift_link_rows(fetch_rows(SHIFT_SHEET_ID, RAW_SHIFT_GID))
+    validate("SHIFT_LINK_ROWS", shift_link_rows)
+
     index_path = "index.html"
     with open(index_path, "r", encoding="utf-8") as f:
         html = f.read()
@@ -222,6 +246,7 @@ def main():
         "SEC1": sections["SEC1"],
         "SEC2": sections["SEC2"],
         "SEC3": sections["SEC3"],
+        "SHIFT_LINK_ROWS": shift_link_rows,
         "REVIEW_ROWS": review_rows,
         "OUTREACH_ROWS": sevenday_rows,
     }
@@ -248,6 +273,7 @@ def main():
 
     print(f"Updated {index_path}: SEC1={len(sections['SEC1'])} rows, "
           f"SEC2={len(sections['SEC2'])} rows, SEC3={len(sections['SEC3'])} rows, "
+          f"SHIFT_LINK_ROWS={len(shift_link_rows)} rows, "
           f"REVIEW_ROWS={len(review_rows)} rows, OUTREACH_ROWS={len(sevenday_rows)} rows, "
           f"snapshot={snapshot}")
 

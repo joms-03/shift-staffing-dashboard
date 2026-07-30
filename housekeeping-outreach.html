@@ -16,6 +16,8 @@ if (window.self === window.top) {
 </script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="assets/dashboard-interactions.css">
+<script defer src="assets/dashboard-interactions.js"></script>
 <title>Housekeeping Pro Outreach Dashboard</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
 <style>
@@ -56,12 +58,15 @@ if (window.self === window.top) {
     margin-bottom: 8px;
   }
   header.page-head {
+    position: relative;
     display: flex;
     justify-content: space-between;
     align-items: flex-end;
     flex-wrap: wrap;
     gap: 12px;
     margin-bottom: 20px;
+    min-height: 208px;
+    padding-right: 232px;
   }
   h1 { font-size: 22px; margin: 0 0 4px; font-weight: 700; }
   .subtitle { color: var(--muted); font-size: 13px; line-height: 1.5; }
@@ -74,31 +79,6 @@ if (window.self === window.top) {
     padding: 6px 14px;
     white-space: nowrap;
   }
-
-  .alert-banner {
-    display: none;
-    align-items: center;
-    justify-content: space-between;
-    gap: 14px;
-    background: var(--red-bg);
-    border: 1px solid #f0b3ab;
-    border-radius: 12px;
-    padding: 12px 18px;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
-  }
-  .alert-banner.show { display: flex; }
-  .alert-banner .msg { display: flex; align-items: center; gap: 10px; font-size: 13.5px; color: var(--red); font-weight: 600; }
-  .alert-dot {
-    width: 9px; height: 9px; border-radius: 50%; background: var(--red);
-    animation: pulse 1.8s infinite; flex-shrink: 0;
-  }
-  @keyframes pulse {
-    0% { box-shadow: 0 0 0 0 rgba(214,69,69,.45); }
-    70% { box-shadow: 0 0 0 8px rgba(214,69,69,0); }
-    100% { box-shadow: 0 0 0 0 rgba(214,69,69,0); }
-  }
-  .alert-banner a.jump { font-size: 12.5px; color: var(--red); text-decoration: underline; font-weight: 600; white-space: nowrap; }
 
   .kpi-row {
     display: grid;
@@ -211,11 +191,112 @@ if (window.self === window.top) {
 
   footer { margin-top: 8px; font-size: 11.5px; color: var(--muted); text-align: center; }
 
+  /* ---- Floating 3D housekeeping panda for Magic Team special tasks ---- */
+  .station {
+    position: absolute;
+    top: 8px;
+    right: 0;
+    width: 260px;
+    height: 222px;
+    z-index: 500;
+    perspective: 800px;
+    isolation: isolate;
+  }
+  .station::before {
+    content: '';
+    position: absolute;
+    inset: 22px 28px 7px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 50% 42%, rgba(231,246,233,.64), rgba(202,229,207,.18) 48%, transparent 70%);
+    filter: blur(8px);
+    z-index: 0;
+  }
+  .station-scene {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+    transition: transform .2s ease-out;
+  }
+  .panda-shadow {
+    position: absolute;
+    bottom: 8px;
+    left: 52%;
+    width: 138px;
+    height: 20px;
+    border-radius: 50%;
+    background: radial-gradient(ellipse, rgba(35,76,45,.25), rgba(35,76,45,0) 70%);
+    transform: translateX(-50%) translateZ(2px);
+    filter: blur(3px);
+  }
+  .panda-mascot {
+    position: absolute;
+    left: 52%;
+    bottom: -16px;
+    width: min(172px,68%);
+    z-index: 2;
+    transform: translateX(-50%);
+    transform-origin: 50% 92%;
+    transform-style: preserve-3d;
+    animation: pandaHousekeepingIdle 3.8s ease-in-out infinite;
+    will-change: transform;
+  }
+  .panda-photo {
+    display: block;
+    width: 100%;
+    height: auto;
+    filter: drop-shadow(0 14px 11px rgba(35,76,45,.22));
+    transform: translateZ(18px);
+  }
+  .panda-glint {
+    position: absolute;
+    z-index: 3;
+    left: 72%;
+    top: 25%;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(240,255,241,.92), rgba(155,221,166,.24) 38%, transparent 70%);
+    mix-blend-mode: screen;
+    animation: pandaGlint 3.1s ease-in-out infinite;
+    pointer-events: none;
+  }
+  @keyframes pandaHousekeepingIdle {
+    0%, 100% { transform: translateX(-50%) translate3d(-4px,2px,18px) rotate(-1.2deg); }
+    25% { transform: translateX(-50%) translate3d(5px,-9px,18px) rotate(1.15deg); }
+    52% { transform: translateX(-50%) translate3d(1px,-3px,18px) rotate(.25deg); }
+    76% { transform: translateX(-50%) translate3d(-6px,-10px,18px) rotate(-.9deg); }
+  }
+  @keyframes pandaGlint {
+    0%, 100% { opacity: .25; transform: translateY(6px) scale(.8); }
+    50% { opacity: .82; transform: translateY(-9px) scale(1.18); }
+  }
+
   @media (max-width: 1100px) {
     .kpi-row { grid-template-columns: repeat(3, 1fr); }
   }
+  @media (max-width: 760px) {
+    header.page-head { min-height: 0; padding-right: 0; }
+    .station {
+      position: relative;
+      top: auto;
+      right: auto;
+      flex-basis: 100%;
+      width: min(280px,100%);
+      height: 230px;
+      margin: 0 auto;
+    }
+    .panda-mascot { left: 50%; width: min(172px,68%); }
+    .panda-shadow { left: 50%; }
+    .panda-glint { left: 67%; }
+  }
   @media (max-width: 640px) {
     .kpi-row { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .station-scene { transition: none; transform: none !important; }
+    .panda-mascot { animation: none; transform: translateX(-50%); }
+    .panda-glint, .kpi-card, details.panel, .chart-panel, tbody tr { animation: none; }
   }
 </style>
 <script>if (window.self !== window.top) document.documentElement.classList.add('embedded');</script>
@@ -261,19 +342,23 @@ if (window.self === window.top) {
   <div>
     <img class="brand-mark" src="assets/qwick-logo.png" alt="Qwick">
     <h1>Housekeeping Pro Outreach Dashboard</h1>
-    <div class="subtitle">Next 7 days of Housekeeping shifts &middot; who to call before a shift falls through, and which businesses need fill or buffer help &middot; built from the <a class="inline-link" href="https://docs.google.com/spreadsheets/d/1rSf0TXQOv7uz4sjkgruL7ObDCJ1qaj1EFdSXCAgeBjo/edit?gid=123456789#gid=123456789" target="_blank" rel="noopener">Housekeeping pro-history sheet</a> &middot; see also the <a class="inline-link" href="qwick-dashboard.html" target="_top">Qwick Magic Team Dashboard</a></div>
+    <div class="subtitle">Next 3 days of Housekeeping shifts &middot; who to call before a shift falls through, and which businesses need fill or buffer help &middot; built from the <a class="inline-link" href="https://docs.google.com/spreadsheets/d/1rSf0TXQOv7uz4sjkgruL7ObDCJ1qaj1EFdSXCAgeBjo/edit?gid=123456789#gid=123456789" target="_blank" rel="noopener">Housekeeping pro-history sheet</a> &middot; see also the <a class="inline-link" href="qwick-dashboard.html" target="_top">Qwick Magic Team Dashboard</a></div>
+  </div>
+  <div class="station" id="station" aria-hidden="true">
+    <div class="station-scene" id="stationScene" aria-hidden="true">
+      <span class="panda-shadow"></span>
+      <div class="panda-mascot">
+        <img class="panda-photo" src="assets/panda-housekeeping.png" alt="">
+      </div>
+      <span class="panda-glint"></span>
+    </div>
   </div>
   <div class="snapshot-tag" id="snapshotTag" data-snapshot-utc="2026-07-29T23:26:15Z">Snapshot &middot; July 29, 2026 23:26 UTC</div>
 </header>
 
-<div class="alert-banner" id="urgentBanner">
-  <div class="msg"><span class="alert-dot"></span><span id="urgentBannerText">Checking for urgent shifts&hellip;</span></div>
-  <a class="jump" href="#outreachPanel">Review outreach queue &darr;</a>
-</div>
-
 <div class="kpi-row">
   <div class="kpi-card">
-    <div class="kpi-label">HK shifts &middot; next 7 days</div>
+    <div class="kpi-label">HK shifts &middot; next 3 days</div>
     <div class="kpi-value" id="kpiShifts">&ndash;</div>
     <div class="kpi-sub" id="kpiShiftsSub">&nbsp;</div>
   </div>
@@ -305,7 +390,7 @@ if (window.self === window.top) {
 </div>
 
 <div class="chart-panel">
-  <h2>7-day outlook</h2>
+  <h2>3-day outlook</h2>
   <div class="panel-desc">Confirmed slots vs. still-open slots, by shift day.</div>
   <div class="chart-wrap"><canvas id="outlookChart"></canvas></div>
 </div>
@@ -313,7 +398,7 @@ if (window.self === window.top) {
 <details class="panel" id="pipelinePanel" open>
   <summary class="panel-summary">
     <div>
-      <h2>7-Day Shift Pipeline<span class="count-pill" id="pipelineCount">0</span></h2>
+      <h2>3-Day Shift Pipeline<span class="count-pill" id="pipelineCount">0</span></h2>
       <div class="panel-desc">Every Housekeeping shift in the window, who's on it, and how thin the buffer is.</div>
     </div>
     <span class="toggle-btn"><span class="chevron">&#9660;</span> Toggle</span>
@@ -327,7 +412,8 @@ if (window.self === window.top) {
         <option value="On" selected>Auto Select: On</option>
         <option value="Off">Auto Select: Off</option>
       </select>
-      <select class="filter-select" id="pipelineDayFilter"><option value="">All 7 days</option></select>
+      <select class="filter-select" id="pipelineTypeFilter"><option value="">Shift type: All</option></select>
+      <select class="filter-select" id="pipelineDayFilter"><option value="">All 3 days</option></select>
       <label class="chk"><input type="checkbox" id="pipelineUnfilledOnly" checked> Unfilled shifts only</label>
     </div>
     <div class="table-scroll">
@@ -337,7 +423,7 @@ if (window.self === window.top) {
             <th class="sortable" data-sort="date">Shift <span class="arrow">&#9650;</span></th>
             <th>Business</th>
             <th>Market</th>
-            <th>Type</th>
+            <th>Shift Type</th>
             <th>Auto Select</th>
             <th class="sortable" data-sort="gap">Requested / Confirmed <span class="arrow">&#9650;</span></th>
             <th>Assigned Pros</th>
@@ -362,10 +448,11 @@ if (window.self === window.top) {
       <input class="search-box" id="outreachSearch" type="text" placeholder="Search pro or business&hellip;">
       <select class="filter-select" id="outreachWindowFilter">
         <option value="24">Next 24 hours</option>
-        <option value="48" selected>Next 48 hours</option>
-        <option value="0">All upcoming</option>
+        <option value="48">Next 48 hours</option>
+        <option value="72" selected>Next 3 days</option>
       </select>
       <select class="filter-select" id="outreachMarketFilter"><option value="">All markets</option></select>
+      <select class="filter-select" id="outreachTypeFilter"><option value="">Shift type: All</option></select>
       <select class="filter-select" id="outreachTierFilter">
         <option value="">All flagged tiers</option>
         <option value="high">High risk only</option>
@@ -382,6 +469,7 @@ if (window.self === window.top) {
             <th>Phone</th>
             <th>Business</th>
             <th class="sortable" data-sort="date">Shift <span class="arrow">&#9650;</span></th>
+            <th>Shift Type</th>
             <th>Why flagged</th>
             <th>Rating</th>
             <th>Completion (life / 30d)</th>
@@ -398,7 +486,7 @@ if (window.self === window.top) {
   <summary class="panel-summary">
     <div>
       <h2>Business Fill &amp; Bonus Needs<span class="count-pill" id="businessCount">0</span></h2>
-      <div class="panel-desc">Rolled up across the 7-day window &mdash; who's short-staffed, and who's fully booked but one cancellation away from a gap.</div>
+      <div class="panel-desc">Rolled up across the 3-day window &mdash; who's short-staffed, and who's fully booked but one cancellation away from a gap.</div>
     </div>
     <span class="toggle-btn"><span class="chevron">&#9660;</span> Toggle</span>
   </summary>
@@ -412,6 +500,7 @@ if (window.self === window.top) {
         <option value="monitor">Monitor</option>
         <option value="healthy">Healthy</option>
       </select>
+      <select class="filter-select" id="businessTypeFilter"><option value="">Shift type: All</option></select>
     </div>
     <div class="table-scroll">
       <table id="businessTable">
@@ -420,6 +509,7 @@ if (window.self === window.top) {
             <th>Status</th>
             <th>Business</th>
             <th>Market</th>
+            <th>Shift Type</th>
             <th>Next shift</th>
             <th># Shifts</th>
             <th>Requested / Confirmed</th>
@@ -555,6 +645,7 @@ function buildShifts(rows) {
     if (!map.has(sid)) {
       map.set(sid, {
         shiftId: sid,
+        locationId: r[COLS.locationId],
         business: r[COLS.business],
         market: r[COLS.market],
         shiftDate: r[COLS.shiftDate],
@@ -562,17 +653,18 @@ function buildShifts(rows) {
         shiftType: r[COLS.shiftType],
         requested: r[COLS.requested] || 0,
         confirmed: r[COLS.confirmed] || 0,
+        shiftUrl: `https://biz.qwick.com/locations/${r[COLS.locationId]}/gigs/${sid}/applicants`,
         pros: [],
       });
     }
     const risk = assessRisk(r);
     map.get(sid).pros.push({ row: r, risk });
   });
-  // Standard pipeline window across all Qwick dashboards: next 7 days. The
-  // sheet is already pre-filtered to this window, but cap here too so the
-  // dashboard stays correct if that upstream scope ever drifts.
+  // Standard pipeline window across all Qwick dashboards: next 3 days. The
+  // sheet includes a wider range, so cap it here to keep this view focused
+  // even if that upstream scope drifts.
   const now = new Date();
-  const cutoff = new Date(now.getTime() + 7 * 24 * 3600 * 1000);
+  const cutoff = new Date(now.getTime() + 72 * 3600 * 1000);
   const shifts = Array.from(map.values()).filter(s => {
     const d = parseDate(s.shiftDate);
     return d >= now && d <= cutoff;
@@ -594,7 +686,8 @@ function buildBusinessRollups(shifts) {
     if (!map.has(s.business)) {
       map.set(s.business, {
         business: s.business, market: s.market, shiftCount: 0,
-        requested: 0, confirmed: 0, flaggedPros: 0, nextShiftDate: null, nextShiftDateStr: null, minBufferShift: Infinity,
+        requested: 0, confirmed: 0, flaggedPros: 0, shiftTypes: new Set(),
+        nextShiftDate: null, nextShiftDateStr: null, nextShiftUrl: null, minBufferShift: Infinity,
       });
     }
     const b = map.get(s.business);
@@ -602,9 +695,14 @@ function buildBusinessRollups(shifts) {
     b.requested += s.requested;
     b.confirmed += s.confirmed;
     b.flaggedPros += s.highRiskCount + s.mediumRiskCount;
+    if (s.shiftType) b.shiftTypes.add(s.shiftType);
     b.minBufferShift = Math.min(b.minBufferShift, s.confirmed - s.requested);
     const d = parseDate(s.shiftDate);
-    if (!b.nextShiftDate || d < b.nextShiftDate) { b.nextShiftDate = d; b.nextShiftDateStr = s.shiftDate; }
+    if (!b.nextShiftDate || d < b.nextShiftDate) {
+      b.nextShiftDate = d;
+      b.nextShiftDateStr = s.shiftDate;
+      b.nextShiftUrl = s.shiftUrl;
+    }
     // A shift is "exposed" if it has no cancellation cushion and at least one
     // flagged pro on it — losing that one pro drops the shift below requested.
     const shiftBuffer = s.confirmed - s.requested;
@@ -648,11 +746,34 @@ function populateSelect(id, values) {
   });
 }
 
+function formatShiftType(value) {
+  const known = {
+    MARKETPLACE: 'Marketplace',
+    PRIVATE_DIRECT_OFFER: 'Private Direct Offer',
+    PRIVATE_OFFER: 'Private Offer',
+    DIRECT_OFFER: 'Direct Offer',
+  };
+  return known[value] || String(value || '')
+    .toLowerCase()
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function populateShiftTypeFilter(id, values) {
+  const sel = document.getElementById(id);
+  values.forEach(value => {
+    const opt = document.createElement('option');
+    opt.value = value;
+    opt.textContent = formatShiftType(value);
+    sel.appendChild(opt);
+  });
+}
+
 function escapeHtml(s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
-// ============ Render: 7-day outlook chart ============
+// ============ Render: 3-day outlook chart ============
 function renderOutlookChart(shifts) {
   const dayMap = new Map();
   shifts.forEach(s => {
@@ -691,6 +812,7 @@ function renderPipeline(shifts) {
   const search = document.getElementById('pipelineSearch').value.trim().toLowerCase();
   const market = document.getElementById('pipelineMarketFilter').value;
   const auto = document.getElementById('pipelineAutoFilter').value;
+  const shiftType = document.getElementById('pipelineTypeFilter').value;
   const day = document.getElementById('pipelineDayFilter').value;
   const unfilledOnly = document.getElementById('pipelineUnfilledOnly').checked;
 
@@ -699,6 +821,7 @@ function renderPipeline(shifts) {
     if (search && !(s.business.toLowerCase().includes(search) || s.market.toLowerCase().includes(search))) return false;
     if (market && s.market !== market) return false;
     if (auto && s.autoSelect !== auto) return false;
+    if (shiftType && s.shiftType !== shiftType) return false;
     if (day && dayKey(s.shiftDate) !== day) return false;
     return true;
   });
@@ -727,9 +850,9 @@ function renderPipeline(shifts) {
     }).join('');
     return `<tr>
       <td>${fmtShiftDate(s.shiftDate)}</td>
-      <td><a class="biz-link" href="https://biz.qwick.com/locations/${s.pros[0].row[COLS.locationId]}/gigs/${s.shiftId}/applicants" target="_blank" rel="noopener">${escapeHtml(s.business)}</a></td>
+      <td><a class="biz-link" href="${escapeHtml(s.shiftUrl)}" target="_blank" rel="noopener">${escapeHtml(s.business)}</a></td>
       <td>${escapeHtml(s.market)}</td>
-      <td>${escapeHtml(s.shiftType)}</td>
+      <td>${escapeHtml(formatShiftType(s.shiftType))}</td>
       <td>${escapeHtml(s.autoSelect)}</td>
       <td><span class="gap-badge ${gapClass}">${gapLabel}</span></td>
       <td>${chips || '&mdash;'}</td>
@@ -744,6 +867,7 @@ function renderOutreach(shifts) {
   const search = document.getElementById('outreachSearch').value.trim().toLowerCase();
   const windowHours = parseInt(document.getElementById('outreachWindowFilter').value, 10);
   const market = document.getElementById('outreachMarketFilter').value;
+  const shiftType = document.getElementById('outreachTypeFilter').value;
   const tier = document.getElementById('outreachTierFilter').value;
   const showAll = document.getElementById('outreachAllRows').checked;
 
@@ -765,6 +889,7 @@ function renderOutreach(shifts) {
     }
     if (tier && e.risk.tier !== tier) return false;
     if (market && e.shift.market !== market) return false;
+    if (shiftType && e.shift.shiftType !== shiftType) return false;
     if (search && !(String(e.pro[COLS.proName]).toLowerCase().includes(search) || e.shift.business.toLowerCase().includes(search))) return false;
     return true;
   });
@@ -779,7 +904,7 @@ function renderOutreach(shifts) {
   document.getElementById('outreachCount').textContent = entries.length;
 
   if (!entries.length) {
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="9">No pros match these filters — nice and quiet.</td></tr>';
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="10">No pros match these filters — nice and quiet.</td></tr>';
     return;
   }
 
@@ -794,13 +919,14 @@ function renderOutreach(shifts) {
     const tierLabel = e.risk.tier === 'high' ? 'High' : (e.risk.tier === 'medium' ? 'Medium' : 'OK');
     const reasonChips = e.risk.reasons.map(reason => `<span class="reason-chip">${escapeHtml(reason)}</span>`).join('') || '&mdash;';
     const phone = r[COLS.proPhone];
-    const shiftUrl = `https://biz.qwick.com/locations/${r[COLS.locationId]}/gigs/${e.shift.shiftId}/applicants`;
+    const shiftUrl = e.shift.shiftUrl;
     return `<tr>
       <td><span class="badge ${e.risk.tier}">${tierLabel} &middot; ${e.risk.score}</span></td>
       <td>${escapeHtml(r[COLS.proName])}<div class="sub-line">${escapeHtml(r[COLS.selectionSource])}</div></td>
       <td>${phone ? `<a class="tel-link" href="tel:${escapeHtml(phone)}">${escapeHtml(phone)}</a>` : '&mdash;'}</td>
-      <td>${escapeHtml(e.shift.business)}<div class="sub-line">${escapeHtml(e.shift.market)}</div></td>
+      <td><a class="biz-link" href="${escapeHtml(shiftUrl)}" target="_blank" rel="noopener">${escapeHtml(e.shift.business)}</a><div class="sub-line">${escapeHtml(e.shift.market)}</div></td>
       <td><a class="shift-link" href="${shiftUrl}" target="_blank" rel="noopener">${fmtShiftDate(e.shift.shiftDate)} &#8599;</a></td>
+      <td>${escapeHtml(formatShiftType(e.shift.shiftType))}</td>
       <td>${reasonChips}</td>
       <td>${rating != null ? rating.toFixed(2) + '★' : '&mdash;'}<div class="sub-line">${ratingsCount} ratings</div></td>
       <td>${compLife != null ? compLife + '%' : '&mdash;'} / ${comp30 != null ? comp30 + '%' : '&mdash;'}</td>
@@ -814,17 +940,19 @@ function renderBusinesses(rollups) {
   const tbody = document.querySelector('#businessTable tbody');
   const search = document.getElementById('businessSearch').value.trim().toLowerCase();
   const action = document.getElementById('businessActionFilter').value;
+  const shiftType = document.getElementById('businessTypeFilter').value;
 
   let rows = rollups.filter(b => {
     if (search && !b.business.toLowerCase().includes(search)) return false;
     if (action && b.action !== action) return false;
+    if (shiftType && !b.shiftTypes.has(shiftType)) return false;
     return true;
   });
 
   document.getElementById('businessCount').textContent = rows.length;
 
   if (!rows.length) {
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="8">No businesses match these filters.</td></tr>';
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="9">No businesses match these filters.</td></tr>';
     return;
   }
 
@@ -836,8 +964,9 @@ function renderBusinesses(rollups) {
     const bufferLabel = tightest < 0 ? `${tightest} on tightest shift` : (tightest === 0 ? 'None' : `+${tightest}`);
     return `<tr>
       <td><span class="badge ${ACTION_BADGE_CLASS[b.action]}">${ACTION_LABEL[b.action]}</span></td>
-      <td>${escapeHtml(b.business)}</td>
+      <td><a class="biz-link" href="${escapeHtml(b.nextShiftUrl)}" target="_blank" rel="noopener">${escapeHtml(b.business)}</a></td>
       <td>${escapeHtml(b.market)}</td>
+      <td>${Array.from(b.shiftTypes).sort().map(formatShiftType).map(escapeHtml).join(', ') || '&mdash;'}</td>
       <td>${b.nextShiftDateStr ? fmtShiftDate(b.nextShiftDateStr) : '&mdash;'}</td>
       <td>${b.shiftCount}</td>
       <td>${b.requested} / ${b.confirmed}</td>
@@ -878,34 +1007,19 @@ function renderKPIs(shifts, rollups) {
   document.getElementById('kpiNeedsBonus').textContent = needsBonus;
   document.getElementById('kpiNeedsBonusSub').textContent = 'fully booked, no cancellation cushion';
 
-  const now = new Date();
-  const next24h = new Date(now.getTime() + 24 * 3600 * 1000);
-  const urgent = shifts.filter(s => {
-    const d = parseDate(s.shiftDate);
-    return d >= now && d <= next24h && (s.gap > 0 || s.highRiskCount > 0);
-  });
-  const banner = document.getElementById('urgentBanner');
-  const bannerText = document.getElementById('urgentBannerText');
-  if (urgent.length) {
-    const openSlots = urgent.reduce((s, x) => s + Math.max(0, x.gap), 0);
-    const riskyPros = urgent.reduce((s, x) => s + x.highRiskCount, 0);
-    const parts = [];
-    if (openSlots > 0) parts.push(`${openSlots} open slot${openSlots !== 1 ? 's' : ''}`);
-    if (riskyPros > 0) parts.push(`${riskyPros} high-risk pro${riskyPros !== 1 ? 's' : ''} assigned`);
-    bannerText.textContent = `${urgent.length} shift${urgent.length !== 1 ? 's' : ''} in the next 24 hours need attention — ${parts.join(' and ')}.`;
-    banner.classList.add('show');
-  } else {
-    banner.classList.remove('show');
-  }
 }
 
 // ============ Wire up ============
 const shifts = buildShifts(ROWS);
 const rollups = buildBusinessRollups(shifts);
 
-const markets = Array.from(new Set(ROWS.map(r => r[COLS.market]))).sort();
+const markets = Array.from(new Set(shifts.map(s => s.market).filter(Boolean))).sort();
 populateSelect('pipelineMarketFilter', markets);
 populateSelect('outreachMarketFilter', markets);
+const shiftTypes = Array.from(new Set(shifts.map(s => s.shiftType).filter(Boolean))).sort();
+populateShiftTypeFilter('pipelineTypeFilter', shiftTypes);
+populateShiftTypeFilter('outreachTypeFilter', shiftTypes);
+populateShiftTypeFilter('businessTypeFilter', shiftTypes);
 
 const days = Array.from(new Set(shifts.map(s => dayKey(s.shiftDate)))).sort();
 const dayFilter = document.getElementById('pipelineDayFilter');
@@ -922,13 +1036,13 @@ function rerenderAll() {
   renderBusinesses(rollups);
 }
 
-['pipelineSearch', 'pipelineMarketFilter', 'pipelineAutoFilter', 'pipelineDayFilter', 'pipelineUnfilledOnly'].forEach(id => {
+['pipelineSearch', 'pipelineMarketFilter', 'pipelineAutoFilter', 'pipelineTypeFilter', 'pipelineDayFilter', 'pipelineUnfilledOnly'].forEach(id => {
   document.getElementById(id).addEventListener('input', () => renderPipeline(shifts));
 });
-['outreachSearch', 'outreachWindowFilter', 'outreachMarketFilter', 'outreachTierFilter', 'outreachAllRows'].forEach(id => {
+['outreachSearch', 'outreachWindowFilter', 'outreachMarketFilter', 'outreachTypeFilter', 'outreachTierFilter', 'outreachAllRows'].forEach(id => {
   document.getElementById(id).addEventListener('input', () => renderOutreach(shifts));
 });
-['businessSearch', 'businessActionFilter'].forEach(id => {
+['businessSearch', 'businessActionFilter', 'businessTypeFilter'].forEach(id => {
   document.getElementById(id).addEventListener('input', () => renderBusinesses(rollups));
 });
 
@@ -952,6 +1066,20 @@ document.querySelectorAll('#outreachTable th.sortable').forEach(th => {
 renderKPIs(shifts, rollups);
 renderOutlookChart(shifts);
 rerenderAll();
+
+// ---- Housekeeping panda gently tilts toward the cursor ----
+(function () {
+  const station = document.getElementById('station');
+  const stationScene = document.getElementById('stationScene');
+  if (!station || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  station.addEventListener('mousemove', (e) => {
+    const rect = station.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width - 0.5;
+    const y = (e.clientY - rect.top) / rect.height - 0.5;
+    stationScene.style.transform = `rotateY(${(x * 20).toFixed(1)}deg) rotateX(${(-y * 12).toFixed(1)}deg)`;
+  });
+  station.addEventListener('mouseleave', () => { stationScene.style.transform = ''; });
+})();
 </script>
 </body>
 </html>
