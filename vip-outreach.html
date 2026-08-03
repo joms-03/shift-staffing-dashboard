@@ -410,7 +410,7 @@ if (window.self === window.top) {
     <div class="kpi-sub" id="kpiUnfilledSub">&nbsp;</div>
   </div>
   <div class="kpi-card danger" style="animation-delay:120ms">
-    <div class="kpi-label">Confirmed pros with no matching position experience</div>
+    <div class="kpi-label">High-risk confirmed pros to outreach</div>
     <div class="kpi-value" id="kpiQualificationRisk">&ndash;</div>
     <div class="kpi-sub" id="kpiQualificationRiskSub">&nbsp;</div>
   </div>
@@ -516,7 +516,7 @@ if (window.self === window.top) {
   <summary class="panel-summary">
     <div>
       <h2>Pro Outreach Queue<span class="count-pill" id="outreachCount">0</span></h2>
-      <div class="panel-desc">Only confirmed pros whose profile has no matching skill or experience for the assigned position, or who have never completed a paid shift in that position.</div>
+      <div class="panel-desc">Only confirmed pros who have neither a matching profile skill/experience nor a prior paid shift in the assigned position.</div>
     </div>
     <span class="toggle-btn"><span class="chevron">&#9660;</span> Toggle</span>
   </summary>
@@ -568,7 +568,7 @@ if (window.self === window.top) {
   </div>
 </details>
 
-<footer>Auto-refreshed hourly from the VIP shift and outreach sheets. The queue contains only confirmed pros with no matching profile skill/experience or no prior paid shift in the assigned position.</footer>
+<footer>Auto-refreshed hourly from the VIP shift and outreach sheets. The queue contains only confirmed pros with neither matching profile skill/experience nor a prior paid shift in the assigned position.</footer>
 
 <script>
 // Column order produced by scripts/refresh_vip.py — keep this in sync with SHIFT_COLUMNS there.
@@ -659,11 +659,12 @@ function fmtDay(shiftDateStr) {
   return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
-// ---- Qualification-risk rows must have either no profile match or no prior
-// paid shift in the assigned position. The sheet applies the same rule. ----
+// ---- Qualification-risk rows must have neither a profile match nor a prior
+// paid shift in the assigned position. This dashboard-side rule intentionally
+// protects against broader rows supplied by the source sheet. ----
 function isQualificationRisk(r) {
   return r[OCOLS.hasMatchingProfileSkill] !== 'Yes'
-    || (Number(r[OCOLS.priorPaidSameSkillShifts]) || 0) === 0;
+    && (Number(r[OCOLS.priorPaidSameSkillShifts]) || 0) === 0;
 }
 
 // ---- Build one row per VIP shift ----
@@ -993,7 +994,7 @@ function renderKPIs(shifts, entries) {
   document.getElementById('kpiUnfilledSub').textContent = `across ${unfilledShifts} shift${unfilledShifts !== 1 ? 's' : ''}`;
 
   document.getElementById('kpiQualificationRisk').textContent = entries.length;
-  document.getElementById('kpiQualificationRiskSub').textContent = 'profile match or prior position history missing';
+  document.getElementById('kpiQualificationRiskSub').textContent = 'both profile match and prior position history missing';
 
   document.getElementById('kpiAutoOff').textContent = autoOffShifts.length;
   document.getElementById('kpiAutoOffSub').textContent = 'no auto-fill safety net';

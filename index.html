@@ -613,7 +613,7 @@ if (window.self === window.top) {
     <div class="kpi-sub" id="kpiAutoOffSub">&nbsp;</div>
   </div>
   <div class="kpi-card danger">
-    <div class="kpi-label">Confirmed pros with no matching position experience</div>
+    <div class="kpi-label">High-risk confirmed pros to outreach</div>
     <div class="kpi-value" id="kpiHighRisk">&ndash;</div>
     <div class="kpi-sub" id="kpiHighRiskSub">&nbsp;</div>
   </div>
@@ -739,7 +739,7 @@ if (window.self === window.top) {
   <summary class="panel-summary">
     <div>
       <h2>Pro Outreach Queue<span class="count-pill" id="outreachCount">0</span></h2>
-      <div class="panel-desc">Only confirmed pros whose profile has no matching skill or experience for the assigned position, or who have never completed a paid shift in that position.</div>
+      <div class="panel-desc">Only confirmed pros who are missing both qualification signals, or whose available overall rating is poor despite prior experience in the position.</div>
     </div>
     <span class="toggle-btn"><span class="chevron">&#9660;</span> Toggle</span>
   </summary>
@@ -768,6 +768,7 @@ if (window.self === window.top) {
             <th class="sortable" data-sort="date">Shift <span class="arrow">&#9650;</span></th>
             <th>Profile skill</th>
             <th>Prior paid position shifts</th>
+            <th>Overall rating</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -1168,6 +1169,22 @@ const STATUS_BADGE_CLASS = { UNFILLED: 'high', UNAPPROVED: 'medium', POSTED: 'gr
 function keyOf(r) { return r[OCOLS.shiftId] + ':' + r[OCOLS.proId]; }
 const OPS_FLAGGED_SET = new Set(REVIEW_ROWS.map(keyOf));
 
+// Temporary fallback until the source exposes ratings for the same position.
+// Keep these thresholds aligned with the broader shift-health risk model.
+function assessOverallRating(r) {
+  const rawRating = r[OCOLS.avgRating];
+  const rating = rawRating == null ? null : Number(rawRating);
+  const ratingsCount = Number(r[OCOLS.ratingsCount]) || 0;
+  const hasRating = ratingsCount > 0 && Number.isFinite(rating);
+  const isPoor = hasRating && (
+    (ratingsCount >= 3 && rating < 4.3)
+    || (ratingsCount < 3 && rating < 4.0)
+  );
+  const label = hasRating ? `${rating.toFixed(2)}★ (${ratingsCount})` : 'Unrated';
+  const reason = isPoor ? `Poor overall rating: ${label}` : null;
+  return { rating, ratingsCount, hasRating, isPoor, label, reason };
+}
+
 // `skipOpsBump`: pass true when scoring a row that's already known to come
 // from the curated review list — checking it against a set built from
 // itself is always true, so the cross-check only makes sense when scoring
@@ -1182,14 +1199,13 @@ function assessRisk(r, skipOpsBump) {
     reasons.push(`${noShows} no-show${noShows > 1 ? 's' : ''} in last 30d`);
   }
 
-  const rating = r[OCOLS.avgRating];
-  const ratingsCount = r[OCOLS.ratingsCount] || 0;
-  if (ratingsCount >= 3 && rating != null && rating < 4.3) {
+  const ratingRisk = assessOverallRating(r);
+  if (ratingRisk.isPoor && ratingRisk.ratingsCount >= 3) {
     score += 3;
-    reasons.push(`${rating.toFixed(2)}★ avg rating (${ratingsCount} ratings)`);
-  } else if (ratingsCount > 0 && ratingsCount < 3 && rating != null && rating < 4.0) {
+    reasons.push(`${ratingRisk.rating.toFixed(2)}★ avg rating (${ratingRisk.ratingsCount} ratings)`);
+  } else if (ratingRisk.isPoor) {
     score += 1;
-    reasons.push(`${rating.toFixed(2)}★ rating, small sample (n=${ratingsCount})`);
+    reasons.push(`${ratingRisk.rating.toFixed(2)}★ rating, small sample (n=${ratingRisk.ratingsCount})`);
   }
 
   const compLife = r[OCOLS.completionLifetime];
@@ -1235,7 +1251,9 @@ function assessRisk(r, skipOpsBump) {
 }
 
 // Outreach is intentionally narrower than the broader shift-health model:
-// only confirmed pros with a position-qualification gap belong in the queue.
+// flag confirmed pros missing both qualification signals, plus experienced
+// pros whose available overall rating is poor while position-specific ratings
+// remain unavailable in the source.
 function assessQualificationGap(r) {
   const reasons = [];
   const profileStatus = String(r[OCOLS.hkCertified] || '').trim();
@@ -1244,16 +1262,22 @@ function assessQualificationGap(r) {
     && r[OCOLS.relevantHkExperience] !== 'No';
   const priorPaidShifts = Number(r[OCOLS.priorHkShifts]) || 0;
   const hasWorkedPosition = priorPaidShifts > 0 || r[OCOLS.workedHkBefore] === 'Yes';
+  const ratingFallback = assessOverallRating(r);
+  const poorRatedExperience = hasWorkedPosition && ratingFallback.isPoor;
 
   if (!hasProfileMatch) reasons.push('No matching skill/experience on profile');
   if (!hasWorkedPosition) reasons.push(`No prior paid ${r[OCOLS.skill]} shifts`);
+  if (poorRatedExperience) reasons.push(ratingFallback.reason);
 
   return {
-    flagged: Boolean(r[OCOLS.confirmedAt]) && reasons.length > 0,
+    flagged: Boolean(r[OCOLS.confirmedAt]) && (
+      (!hasProfileMatch && !hasWorkedPosition) || poorRatedExperience
+    ),
     reasons,
     profileStatus: profileStatus || 'Unknown',
     hasProfileMatch,
     priorPaidShifts,
+    ratingFallback,
   };
 }
 
@@ -1377,7 +1401,7 @@ function renderOutreachQueue() {
 
   document.getElementById('outreachCount').textContent = entries.length;
   if (!entries.length) {
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="9">No confirmed pros with a position-qualification gap match these filters.</td></tr>';
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="10">No high-risk confirmed pros match these filters.</td></tr>';
     return;
   }
 
@@ -1396,6 +1420,7 @@ function renderOutreachQueue() {
       <td><a class="shift-link" href="${shiftUrl}" target="_blank" rel="noopener">${fmtDate(r[OCOLS.shiftDate])} &#8599;</a></td>
       <td><span class="badge ${e.qualification.hasProfileMatch ? 'ok' : 'high'}">${escapeHtml(e.qualification.profileStatus)}</span></td>
       <td><span class="badge ${e.qualification.priorPaidShifts > 0 ? 'ok' : 'high'}">${e.qualification.priorPaidShifts}</span></td>
+      <td><span class="badge ${e.qualification.ratingFallback.isPoor ? 'high' : (e.qualification.ratingFallback.hasRating ? 'ok' : 'gray')}">${escapeHtml(e.qualification.ratingFallback.label)}</span></td>
     </tr>`;
   }).join('');
 }
@@ -1703,7 +1728,7 @@ function renderKPIs() {
     isInStandardWindow(r[OCOLS.shiftDate]) && assessQualificationGap(r).flagged
   );
   document.getElementById('kpiHighRisk').textContent = qualificationRisk.length;
-  document.getElementById('kpiHighRiskSub').textContent = 'next 3 days · profile match or prior position history missing';
+  document.getElementById('kpiHighRiskSub').textContent = 'next 3 days · both qualification signals missing or poor overall rating';
 
   const needsBonus = standardOutreachShifts.filter(s => s.action === 'bonus').length;
   document.getElementById('kpiNeedsBonus').textContent = needsBonus;

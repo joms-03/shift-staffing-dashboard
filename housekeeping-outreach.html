@@ -368,7 +368,7 @@ if (window.self === window.top) {
     <div class="kpi-sub" id="kpiUnfilledSub">&nbsp;</div>
   </div>
   <div class="kpi-card danger">
-    <div class="kpi-label">Confirmed pros with no matching position experience</div>
+    <div class="kpi-label">High-risk confirmed pros to outreach</div>
     <div class="kpi-value" id="kpiHighRisk">&ndash;</div>
     <div class="kpi-sub" id="kpiHighRiskSub">&nbsp;</div>
   </div>
@@ -434,7 +434,7 @@ if (window.self === window.top) {
   <summary class="panel-summary">
     <div>
       <h2>Pro Outreach Queue<span class="count-pill" id="outreachCount">0</span></h2>
-      <div class="panel-desc">Only confirmed pros whose profile has no matching Housekeeping skill or experience, or who have never completed a paid Housekeeping shift.</div>
+      <div class="panel-desc">Only confirmed pros who are missing both Housekeeping qualification signals, or whose available overall rating is poor despite prior Housekeeping experience.</div>
     </div>
     <span class="toggle-btn"><span class="chevron">&#9660;</span> Toggle</span>
   </summary>
@@ -461,6 +461,7 @@ if (window.self === window.top) {
             <th>Shift Type</th>
             <th>Profile skill</th>
             <th>Prior paid Housekeeping shifts</th>
+            <th>Overall rating</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -565,6 +566,22 @@ function fmtDay(shiftDateStr) {
   return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
+// Temporary fallback until the source exposes ratings for the same position.
+// Keep these thresholds aligned with the broader shift-health risk model.
+function assessOverallRating(r) {
+  const rawRating = r[COLS.avgRating];
+  const rating = rawRating == null ? null : Number(rawRating);
+  const ratingsCount = Number(r[COLS.ratingsCount]) || 0;
+  const hasRating = ratingsCount > 0 && Number.isFinite(rating);
+  const isPoor = hasRating && (
+    (ratingsCount >= 3 && rating < 4.3)
+    || (ratingsCount < 3 && rating < 4.0)
+  );
+  const label = hasRating ? `${rating.toFixed(2)}★ (${ratingsCount})` : 'Unrated';
+  const reason = isPoor ? `Poor overall rating: ${label}` : null;
+  return { rating, ratingsCount, hasRating, isPoor, label, reason };
+}
+
 // ---- Risk scoring: derived from pro history fields on each assigned pro-shift row ----
 function assessRisk(r) {
   const reasons = [];
@@ -576,14 +593,13 @@ function assessRisk(r) {
     reasons.push(`${noShows} no-show${noShows > 1 ? 's' : ''} in last 30d`);
   }
 
-  const rating = r[COLS.avgRating];
-  const ratingsCount = r[COLS.ratingsCount] || 0;
-  if (ratingsCount >= 3 && rating != null && rating < 4.3) {
+  const ratingRisk = assessOverallRating(r);
+  if (ratingRisk.isPoor && ratingRisk.ratingsCount >= 3) {
     score += 3;
-    reasons.push(`${rating.toFixed(2)}★ avg rating (${ratingsCount} ratings)`);
-  } else if (ratingsCount > 0 && ratingsCount < 3 && rating != null && rating < 4.0) {
+    reasons.push(`${ratingRisk.rating.toFixed(2)}★ avg rating (${ratingRisk.ratingsCount} ratings)`);
+  } else if (ratingRisk.isPoor) {
     score += 1;
-    reasons.push(`${rating.toFixed(2)}★ rating, small sample (n=${ratingsCount})`);
+    reasons.push(`${ratingRisk.rating.toFixed(2)}★ rating, small sample (n=${ratingRisk.ratingsCount})`);
   }
 
   const compLife = r[COLS.completionLifetime];
@@ -624,8 +640,10 @@ function assessRisk(r) {
   return { score, tier, reasons };
 }
 
-// The outreach queue is narrower than the shift-health model: it contains
-// only confirmed pros with a Housekeeping qualification/history gap.
+// The outreach queue is narrower than the shift-health model: flag confirmed
+// pros missing both Housekeeping qualification signals, plus experienced pros
+// whose available overall rating is poor while position-specific ratings remain
+// unavailable in the source.
 function assessQualificationGap(r) {
   const reasons = [];
   const profileStatus = String(r[COLS.hkCertified] || '').trim();
@@ -634,16 +652,22 @@ function assessQualificationGap(r) {
     && r[COLS.relevantHkExperience] !== 'No';
   const priorPaidShifts = Number(r[COLS.priorHkShifts]) || 0;
   const hasWorkedPosition = priorPaidShifts > 0 || r[COLS.workedHkBefore] === 'Yes';
+  const ratingFallback = assessOverallRating(r);
+  const poorRatedExperience = hasWorkedPosition && ratingFallback.isPoor;
 
   if (!hasProfileMatch) reasons.push('No matching Housekeeping skill/experience on profile');
   if (!hasWorkedPosition) reasons.push('No prior paid Housekeeping shifts');
+  if (poorRatedExperience) reasons.push(ratingFallback.reason);
 
   return {
-    flagged: Boolean(r[COLS.confirmedAt]) && reasons.length > 0,
+    flagged: Boolean(r[COLS.confirmedAt]) && (
+      (!hasProfileMatch && !hasWorkedPosition) || poorRatedExperience
+    ),
     reasons,
     profileStatus: profileStatus || 'Unknown',
     hasProfileMatch,
     priorPaidShifts,
+    ratingFallback,
   };
 }
 
@@ -908,7 +932,7 @@ function renderOutreach(shifts) {
   document.getElementById('outreachCount').textContent = entries.length;
 
   if (!entries.length) {
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="8">No confirmed pros with a Housekeeping qualification gap match these filters.</td></tr>';
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="9">No high-risk confirmed pros match these filters.</td></tr>';
     return;
   }
 
@@ -926,6 +950,7 @@ function renderOutreach(shifts) {
       <td>${escapeHtml(formatShiftType(e.shift.shiftType))}</td>
       <td><span class="badge ${e.qualification.hasProfileMatch ? 'ok' : 'high'}">${escapeHtml(e.qualification.profileStatus)}</span></td>
       <td><span class="badge ${e.qualification.priorPaidShifts > 0 ? 'ok' : 'high'}">${e.qualification.priorPaidShifts}</span></td>
+      <td><span class="badge ${e.qualification.ratingFallback.isPoor ? 'high' : (e.qualification.ratingFallback.hasRating ? 'ok' : 'gray')}">${escapeHtml(e.qualification.ratingFallback.label)}</span></td>
     </tr>`;
   }).join('');
 }
@@ -993,7 +1018,7 @@ function renderKPIs(shifts, rollups) {
   document.getElementById('kpiUnfilledSub').textContent = `across ${unfilledShifts} shift${unfilledShifts !== 1 ? 's' : ''}`;
 
   document.getElementById('kpiHighRisk').textContent = qualificationRisk;
-  document.getElementById('kpiHighRiskSub').textContent = 'profile match or prior Housekeeping history missing';
+  document.getElementById('kpiHighRiskSub').textContent = 'both qualification signals missing or poor overall rating';
 
   document.getElementById('kpiNeedsFill').textContent = needsFill;
   document.getElementById('kpiNeedsFillSub').textContent = 'open slots with no pro yet';

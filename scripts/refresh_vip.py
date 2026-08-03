@@ -6,9 +6,10 @@ vip-outreach.html.
 Sources:
 - 'VIP' sheet (Redshift import) — one row per upcoming shift at a VIP
   business, with fill status and auto-select flag.
-- 'VIP Outreach' sheet ('Coefficient_Raw' tab) — one row per confirmed pro
-  whose profile lacks a matching skill/experience or who has no prior paid
-  shift in the assigned position.
+- 'VIP Outreach' sheet ('Coefficient_Raw' tab) — candidate rows for confirmed
+  pros with a qualification signal missing. The dashboard applies the final
+  outreach rule: both the profile match and prior paid position history must
+  be missing.
 - 'VIP Outreach' sheet ('Notes' tab) — outreach notes and assigned agent,
   joined back to the raw qualification-risk rows by row_key.
 """
