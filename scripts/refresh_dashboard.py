@@ -5,6 +5,8 @@ date) inside index.html:
 - SEC1/SEC2/SEC3: the 'Daily Shift Metrics' tab of the shift staffing sheet.
 - SHIFT_LINK_ROWS: exact location and shift IDs from the source import tab,
   used by every clickable Business name.
+- PAYMENT_ROWS: the hourly 'BF5 Location Payment Status' import, used to
+  surface locations with no payment information in Needs Approval/Attention.
 - REVIEW_ROWS: the 'BF5 Pros to Review' tab (ops-curated) — full pipeline,
   drives the Pro Outreach Queue.
 - OUTREACH_ROWS: the 'BF5 7-Day Review' tab — comprehensive near-term
@@ -24,6 +26,7 @@ SHIFT_GID = "2006814828"
 REVIEW_GID = "1635271142"
 SEVENDAY_GID = "1327008017"
 RAW_SHIFT_GID = "165226170"
+PAYMENT_GID = "464653222"
 
 HEADERS = {
     "SEC1": ("Business Name", "Date", "Skill", "Requested", "Confirmed", "Unfilled",
@@ -88,6 +91,10 @@ PRO_COLUMNS = [
 SHIFT_LINK_COLUMNS = [
     "business_name", "location_id", "shift_id", "shift_date", "skill",
     "requested_pros", "confirmed_pros",
+]
+PAYMENT_COLUMNS = [
+    "location_id", "location_name", "approval_status",
+    "has_payment_information", "payment_information_scope",
 ]
 INT_COLS = {
     "location_id", "shift_id", "requested_pros", "confirmed_pros", "pro_id",
@@ -214,6 +221,20 @@ def parse_shift_link_rows(rows):
     return out
 
 
+def parse_payment_rows(rows):
+    header_idx = next(i for i, r in enumerate(rows) if r and r[0] == "location_id")
+    header = rows[header_idx]
+    idx = {name: i for i, name in enumerate(header)}
+    missing = [name for name in PAYMENT_COLUMNS if name not in idx]
+    if missing:
+        raise SystemExit(f"Refusing to update: payment feed missing columns {missing}")
+    records = [r for r in rows[header_idx + 1:] if r and r[0]]
+    return [
+        [coerce(col, r[idx[col]] if idx[col] < len(r) else "") for col in PAYMENT_COLUMNS]
+        for r in records
+    ]
+
+
 def validate(name, value):
     if not value:
         raise SystemExit(f"Refusing to update: {name} came back empty")
@@ -238,6 +259,9 @@ def main():
     shift_link_rows = parse_shift_link_rows(fetch_rows(SHIFT_SHEET_ID, RAW_SHIFT_GID))
     validate("SHIFT_LINK_ROWS", shift_link_rows)
 
+    payment_rows = parse_payment_rows(fetch_rows(SHIFT_SHEET_ID, PAYMENT_GID))
+    validate("PAYMENT_ROWS", payment_rows)
+
     index_path = "index.html"
     with open(index_path, "r", encoding="utf-8") as f:
         html = f.read()
@@ -247,6 +271,7 @@ def main():
         "SEC2": sections["SEC2"],
         "SEC3": sections["SEC3"],
         "SHIFT_LINK_ROWS": shift_link_rows,
+        "PAYMENT_ROWS": payment_rows,
         "REVIEW_ROWS": review_rows,
         "OUTREACH_ROWS": sevenday_rows,
     }
@@ -274,6 +299,7 @@ def main():
     print(f"Updated {index_path}: SEC1={len(sections['SEC1'])} rows, "
           f"SEC2={len(sections['SEC2'])} rows, SEC3={len(sections['SEC3'])} rows, "
           f"SHIFT_LINK_ROWS={len(shift_link_rows)} rows, "
+          f"PAYMENT_ROWS={len(payment_rows)} rows, "
           f"REVIEW_ROWS={len(review_rows)} rows, OUTREACH_ROWS={len(sevenday_rows)} rows, "
           f"snapshot={snapshot}")
 
