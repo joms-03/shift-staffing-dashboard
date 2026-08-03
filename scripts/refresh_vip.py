@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
-"""Pull the VIP shift and VIP outreach sheets and regenerate the SHIFT_ROWS
-and OUTREACH_ROWS arrays (and snapshot date) inside vip-outreach.html.
+"""Pull the VIP shift and qualification-risk outreach sheets and regenerate
+the SHIFT_ROWS and OUTREACH_ROWS arrays (and snapshot date) inside
+vip-outreach.html.
 
 Sources:
 - 'VIP' sheet (Redshift import) — one row per upcoming shift at a VIP
   business, with fill status and auto-select flag.
-- 'VIP outreach' sheet ('03 - VIP Reason for Outreach' tab) — one row per
-  pro assigned to one of those shifts who still needs an outreach call,
-  with how many hours out the shift is.
-Rendering, urgency tiers, and rollups all happen client-side in the HTML
-so thresholds can be tuned without re-running this script.
+- 'VIP Outreach' sheet ('Coefficient_Raw' tab) — one row per confirmed pro
+  whose profile lacks a matching skill/experience or who has no prior paid
+  shift in the assigned position.
+- 'VIP Outreach' sheet ('Notes' tab) — outreach notes and assigned agent,
+  joined back to the raw qualification-risk rows by row_key.
 """
 
 import csv
@@ -22,7 +23,8 @@ from datetime import datetime, timedelta, timezone
 SHIFT_SHEET_ID = "1b4Le5-0Uev8ji9ziCcvSh1MOERKWqeAwZyiPj8RtBkc"
 SHIFT_GID = "849611260"
 OUTREACH_SHEET_ID = "1k5oRyKF4RfMs9pvB7WVGLICKM6R-4MI10ZbTvk76PPw"
-OUTREACH_GID = "0"
+OUTREACH_GID = "1630000904"
+OUTREACH_NOTES_GID = "930242576"
 
 SHIFT_COLUMNS = [
     "shift_id", "start_datetime", "market", "location_name", "shift_type",
@@ -31,8 +33,9 @@ SHIFT_COLUMNS = [
 ]
 OUTREACH_COLUMNS = [
     "row_key", "pro_name", "pro_phone_number", "outreach_status", "verified_status",
-    "hours_to_start_time", "start_time", "location_name", "market", "skillset",
-    "pro_id", "gig_id", "notes", "agent_name",
+    "hours_to_start", "start_time", "location_name", "market", "skillset_type",
+    "pro_id", "gig_id", "has_matching_profile_skill", "prior_paid_same_skill_shifts",
+    "qualification_gap", "notes", "agent_name",
 ]
 
 # Sheet mixes "MM/DD/YYYY H:MM AM/PM" (shift sheet), "M/D/YYYY H:MM:SS" 24-hour
@@ -133,7 +136,27 @@ def parse_shift_rows(raw_rows):
     return out
 
 
-def parse_outreach_rows(raw_rows):
+def parse_notes(raw_rows):
+    header_idx = next(i for i, r in enumerate(raw_rows) if r and r[0].strip().lower() == "row_key")
+    header = [h.strip().lower().replace(" ", "_") for h in raw_rows[header_idx]]
+    idx = {name: i for i, name in enumerate(header) if name}
+
+    def get(r, name):
+        i = idx.get(name)
+        return r[i] if i is not None and i < len(r) else ""
+
+    notes = {}
+    for r in raw_rows[header_idx + 1:]:
+        row_key = clean(get(r, "row_key"))
+        if row_key:
+            notes[row_key] = {
+                "notes": clean(get(r, "notes")),
+                "agent_name": clean(get(r, "agent_name")),
+            }
+    return notes
+
+
+def parse_outreach_rows(raw_rows, notes_by_key):
     header_idx = next(i for i, r in enumerate(raw_rows) if r and r[0].strip() == "row_key")
     header = [h.strip() for h in raw_rows[header_idx]]
     idx = {name: i for i, name in enumerate(header) if name}
@@ -145,21 +168,26 @@ def parse_outreach_rows(raw_rows):
 
     out = []
     for r in records:
+        row_key = clean(get(r, "row_key"))
+        note = notes_by_key.get(row_key, {})
         out.append([
-            clean(get(r, "row_key")),
+            row_key,
             clean(get(r, "pro_name")),
             clean(get(r, "pro_phone_number")),
             clean(get(r, "outreach_status")),
             clean(get(r, "verified_status")),
-            to_float(get(r, "hours_to_start_time")),
+            to_float(get(r, "hours_to_start")),
             normalize_datetime(get(r, "start_time")),
             clean(get(r, "location_name")),
             clean(get(r, "market")),
-            clean(get(r, "skillset")),
+            clean(get(r, "skillset_type")),
             to_int(get(r, "pro_id")),
             to_int(get(r, "gig_id")),
-            clean(get(r, "notes")),
-            clean(get(r, "agent_name")),
+            clean(get(r, "has_matching_profile_skill")),
+            to_int(get(r, "prior_paid_same_skill_shifts")),
+            clean(get(r, "qualification_gap")),
+            note.get("notes"),
+            note.get("agent_name"),
         ])
     return out
 
@@ -169,9 +197,14 @@ def main():
     if not shift_rows:
         raise SystemExit("Refusing to update: VIP shift sheet came back empty")
 
-    outreach_rows = parse_outreach_rows(fetch_rows(OUTREACH_SHEET_ID, OUTREACH_GID))
-    if not outreach_rows:
-        raise SystemExit("Refusing to update: VIP outreach sheet came back empty")
+    notes_by_key = parse_notes(fetch_rows(OUTREACH_SHEET_ID, OUTREACH_NOTES_GID))
+    outreach_rows = parse_outreach_rows(
+        fetch_rows(OUTREACH_SHEET_ID, OUTREACH_GID),
+        notes_by_key,
+    )
+    # An empty outreach result is valid: it means no confirmed VIP pros have
+    # a qualification gap right now, and the dashboard should show zero
+    # rather than preserving a stale queue from the prior refresh.
 
     html_path = "vip-outreach.html"
     with open(html_path, "r", encoding="utf-8") as f:

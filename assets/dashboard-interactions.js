@@ -12,14 +12,10 @@
     kpiApproval: ["approvalPanel"],
     kpiAutoOff: ["businessPanel", "unfilledPanel"],
     kpiHighRisk: ["outreachPanel"],
-    kpiMedRisk: ["outreachPanel"],
+    kpiQualificationRisk: ["outreachPanel"],
     kpiNeedsBonus: ["bonusPanel", "businessPanel"],
-    kpiHealthy: ["shiftHealthPanel"],
     kpiShifts: ["pipelinePanel"],
     kpiUnfilled: ["businessPanel", "pipelinePanel"],
-    kpiUrgent: ["outreachPanel"],
-    kpiWatch: ["outreachPanel"],
-    kpiUnverified: ["outreachPanel"],
     kpiNeedsFill: ["businessPanel"]
   };
 

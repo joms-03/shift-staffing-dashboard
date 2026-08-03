@@ -368,14 +368,9 @@ if (window.self === window.top) {
     <div class="kpi-sub" id="kpiUnfilledSub">&nbsp;</div>
   </div>
   <div class="kpi-card danger">
-    <div class="kpi-label">High-risk pros to outreach</div>
+    <div class="kpi-label">Confirmed pros with no matching position experience</div>
     <div class="kpi-value" id="kpiHighRisk">&ndash;</div>
     <div class="kpi-sub" id="kpiHighRiskSub">&nbsp;</div>
-  </div>
-  <div class="kpi-card warn">
-    <div class="kpi-label">Medium-risk pros to watch</div>
-    <div class="kpi-value" id="kpiMedRisk">&ndash;</div>
-    <div class="kpi-sub" id="kpiMedRiskSub">&nbsp;</div>
   </div>
   <div class="kpi-card danger">
     <div class="kpi-label">Businesses needing fill help</div>
@@ -439,7 +434,7 @@ if (window.self === window.top) {
   <summary class="panel-summary">
     <div>
       <h2>Pro Outreach Queue<span class="count-pill" id="outreachCount">0</span></h2>
-      <div class="panel-desc">Pros assigned to an upcoming shift whose history flags them as a fill risk &mdash; ratings, completion rate, cancellations, or lack of housekeeping experience.</div>
+      <div class="panel-desc">Only confirmed pros whose profile has no matching Housekeeping skill or experience, or who have never completed a paid Housekeeping shift.</div>
     </div>
     <span class="toggle-btn"><span class="chevron">&#9660;</span> Toggle</span>
   </summary>
@@ -453,27 +448,19 @@ if (window.self === window.top) {
       </select>
       <select class="filter-select" id="outreachMarketFilter"><option value="">All markets</option></select>
       <select class="filter-select" id="outreachTypeFilter"><option value="">Shift type: All</option></select>
-      <select class="filter-select" id="outreachTierFilter">
-        <option value="">All flagged tiers</option>
-        <option value="high">High risk only</option>
-        <option value="medium">Medium risk only</option>
-      </select>
-      <label class="chk"><input type="checkbox" id="outreachAllRows"> Show unflagged pros too</label>
     </div>
     <div class="table-scroll">
       <table id="outreachTable">
         <thead>
           <tr>
-            <th class="sortable" data-sort="score">Risk <span class="arrow">&#9660;</span></th>
+            <th>Qualification gap</th>
             <th>Pro</th>
             <th>Phone</th>
             <th>Business</th>
             <th class="sortable" data-sort="date">Shift <span class="arrow">&#9650;</span></th>
             <th>Shift Type</th>
-            <th>Why flagged</th>
-            <th>Rating</th>
-            <th>Completion (life / 30d)</th>
-            <th>Cancels (30d)</th>
+            <th>Profile skill</th>
+            <th>Prior paid Housekeeping shifts</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -635,6 +622,29 @@ function assessRisk(r) {
   if (score >= 6) tier = 'high';
   else if (score >= 3) tier = 'medium';
   return { score, tier, reasons };
+}
+
+// The outreach queue is narrower than the shift-health model: it contains
+// only confirmed pros with a Housekeeping qualification/history gap.
+function assessQualificationGap(r) {
+  const reasons = [];
+  const profileStatus = String(r[COLS.hkCertified] || '').trim();
+  const normalizedProfileStatus = profileStatus.toLowerCase();
+  const hasProfileMatch = !['', 'no', 'neither'].includes(normalizedProfileStatus)
+    && r[COLS.relevantHkExperience] !== 'No';
+  const priorPaidShifts = Number(r[COLS.priorHkShifts]) || 0;
+  const hasWorkedPosition = priorPaidShifts > 0 || r[COLS.workedHkBefore] === 'Yes';
+
+  if (!hasProfileMatch) reasons.push('No matching Housekeeping skill/experience on profile');
+  if (!hasWorkedPosition) reasons.push('No prior paid Housekeeping shifts');
+
+  return {
+    flagged: Boolean(r[COLS.confirmedAt]) && reasons.length > 0,
+    reasons,
+    profileStatus: profileStatus || 'Unknown',
+    hasProfileMatch,
+    priorPaidShifts,
+  };
 }
 
 // ---- Group pro-shift rows into shifts ----
@@ -861,15 +871,13 @@ function renderPipeline(shifts) {
 }
 
 // ============ Render: Outreach queue table ============
-let outreachSort = { key: 'score', dir: -1 };
+let outreachSort = { key: 'date', dir: 1 };
 function renderOutreach(shifts) {
   const tbody = document.querySelector('#outreachTable tbody');
   const search = document.getElementById('outreachSearch').value.trim().toLowerCase();
   const windowHours = parseInt(document.getElementById('outreachWindowFilter').value, 10);
   const market = document.getElementById('outreachMarketFilter').value;
   const shiftType = document.getElementById('outreachTypeFilter').value;
-  const tier = document.getElementById('outreachTierFilter').value;
-  const showAll = document.getElementById('outreachAllRows').checked;
 
   const now = new Date();
   const cutoff = windowHours > 0 ? new Date(now.getTime() + windowHours * 3600 * 1000) : null;
@@ -877,17 +885,16 @@ function renderOutreach(shifts) {
   let entries = [];
   shifts.forEach(s => {
     s.pros.forEach(p => {
-      entries.push({ shift: s, pro: p.row, risk: p.risk });
+      const qualification = assessQualificationGap(p.row);
+      if (qualification.flagged) entries.push({ shift: s, pro: p.row, qualification });
     });
   });
 
   entries = entries.filter(e => {
-    if (!showAll && e.risk.tier === 'ok') return false;
     if (cutoff) {
       const d = parseDate(e.shift.shiftDate);
       if (d < now || d > cutoff) return false;
     }
-    if (tier && e.risk.tier !== tier) return false;
     if (market && e.shift.market !== market) return false;
     if (shiftType && e.shift.shiftType !== shiftType) return false;
     if (search && !(String(e.pro[COLS.proName]).toLowerCase().includes(search) || e.shift.business.toLowerCase().includes(search))) return false;
@@ -895,42 +902,30 @@ function renderOutreach(shifts) {
   });
 
   entries.sort((a, b) => {
-    let cmp = 0;
-    if (outreachSort.key === 'score') cmp = a.risk.score - b.risk.score;
-    else if (outreachSort.key === 'date') cmp = parseDate(a.shift.shiftDate) - parseDate(b.shift.shiftDate);
-    return cmp * outreachSort.dir;
+    return (parseDate(a.shift.shiftDate) - parseDate(b.shift.shiftDate)) * outreachSort.dir;
   });
 
   document.getElementById('outreachCount').textContent = entries.length;
 
   if (!entries.length) {
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="10">No pros match these filters — nice and quiet.</td></tr>';
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="8">No confirmed pros with a Housekeeping qualification gap match these filters.</td></tr>';
     return;
   }
 
   tbody.innerHTML = entries.map(e => {
     const r = e.pro;
-    const rating = r[COLS.avgRating];
-    const ratingsCount = r[COLS.ratingsCount] || 0;
-    const compLife = r[COLS.completionLifetime];
-    const comp30 = r[COLS.completion30d];
-    const cancels = r[COLS.cancels30d] || 0;
-    const cancelRate = r[COLS.cancelRate30d];
-    const tierLabel = e.risk.tier === 'high' ? 'High' : (e.risk.tier === 'medium' ? 'Medium' : 'OK');
-    const reasonChips = e.risk.reasons.map(reason => `<span class="reason-chip">${escapeHtml(reason)}</span>`).join('') || '&mdash;';
+    const reasonChips = e.qualification.reasons.map(reason => `<span class="reason-chip">${escapeHtml(reason)}</span>`).join('');
     const phone = r[COLS.proPhone];
     const shiftUrl = e.shift.shiftUrl;
     return `<tr>
-      <td><span class="badge ${e.risk.tier}">${tierLabel} &middot; ${e.risk.score}</span></td>
+      <td>${reasonChips}</td>
       <td>${escapeHtml(r[COLS.proName])}<div class="sub-line">${escapeHtml(r[COLS.selectionSource])}</div></td>
       <td>${phone ? `<a class="tel-link" href="tel:${escapeHtml(phone)}">${escapeHtml(phone)}</a>` : '&mdash;'}</td>
       <td><a class="biz-link" href="${escapeHtml(shiftUrl)}" target="_blank" rel="noopener">${escapeHtml(e.shift.business)}</a><div class="sub-line">${escapeHtml(e.shift.market)}</div></td>
       <td><a class="shift-link" href="${shiftUrl}" target="_blank" rel="noopener">${fmtShiftDate(e.shift.shiftDate)} &#8599;</a></td>
       <td>${escapeHtml(formatShiftType(e.shift.shiftType))}</td>
-      <td>${reasonChips}</td>
-      <td>${rating != null ? rating.toFixed(2) + '★' : '&mdash;'}<div class="sub-line">${ratingsCount} ratings</div></td>
-      <td>${compLife != null ? compLife + '%' : '&mdash;'} / ${comp30 != null ? comp30 + '%' : '&mdash;'}</td>
-      <td>${cancels}${cancelRate != null ? ` (${cancelRate}%)` : ''}</td>
+      <td><span class="badge ${e.qualification.hasProfileMatch ? 'ok' : 'high'}">${escapeHtml(e.qualification.profileStatus)}</span></td>
+      <td><span class="badge ${e.qualification.priorPaidShifts > 0 ? 'ok' : 'high'}">${e.qualification.priorPaidShifts}</span></td>
     </tr>`;
   }).join('');
 }
@@ -983,8 +978,10 @@ function renderKPIs(shifts, rollups) {
   const unfilled = shifts.reduce((s, x) => s + Math.max(0, x.gap), 0);
   const unfilledShifts = shifts.filter(x => x.gap > 0).length;
 
-  let highRisk = 0, medRisk = 0;
-  shifts.forEach(s => { highRisk += s.highRiskCount; medRisk += s.mediumRiskCount; });
+  const qualificationRisk = shifts.reduce(
+    (count, shift) => count + shift.pros.filter(p => assessQualificationGap(p.row).flagged).length,
+    0,
+  );
 
   const needsFill = rollups.filter(b => b.action === 'fill').length;
   const needsBonus = rollups.filter(b => b.action === 'bonus').length;
@@ -995,11 +992,8 @@ function renderKPIs(shifts, rollups) {
   document.getElementById('kpiUnfilled').textContent = unfilled;
   document.getElementById('kpiUnfilledSub').textContent = `across ${unfilledShifts} shift${unfilledShifts !== 1 ? 's' : ''}`;
 
-  document.getElementById('kpiHighRisk').textContent = highRisk;
-  document.getElementById('kpiHighRiskSub').textContent = 'no-shows, low ratings, low completion';
-
-  document.getElementById('kpiMedRisk').textContent = medRisk;
-  document.getElementById('kpiMedRiskSub').textContent = 'worth a check-in text';
+  document.getElementById('kpiHighRisk').textContent = qualificationRisk;
+  document.getElementById('kpiHighRiskSub').textContent = 'profile match or prior Housekeeping history missing';
 
   document.getElementById('kpiNeedsFill').textContent = needsFill;
   document.getElementById('kpiNeedsFillSub').textContent = 'open slots with no pro yet';
@@ -1039,7 +1033,7 @@ function rerenderAll() {
 ['pipelineSearch', 'pipelineMarketFilter', 'pipelineAutoFilter', 'pipelineTypeFilter', 'pipelineDayFilter', 'pipelineUnfilledOnly'].forEach(id => {
   document.getElementById(id).addEventListener('input', () => renderPipeline(shifts));
 });
-['outreachSearch', 'outreachWindowFilter', 'outreachMarketFilter', 'outreachTypeFilter', 'outreachTierFilter', 'outreachAllRows'].forEach(id => {
+['outreachSearch', 'outreachWindowFilter', 'outreachMarketFilter', 'outreachTypeFilter'].forEach(id => {
   document.getElementById(id).addEventListener('input', () => renderOutreach(shifts));
 });
 ['businessSearch', 'businessActionFilter', 'businessTypeFilter'].forEach(id => {
@@ -1057,7 +1051,7 @@ document.querySelectorAll('#pipelineTable th.sortable').forEach(th => {
 document.querySelectorAll('#outreachTable th.sortable').forEach(th => {
   th.addEventListener('click', () => {
     const key = th.dataset.sort;
-    outreachSort.dir = (outreachSort.key === key) ? -outreachSort.dir : (key === 'score' ? -1 : 1);
+    outreachSort.dir = (outreachSort.key === key) ? -outreachSort.dir : 1;
     outreachSort.key = key;
     renderOutreach(shifts);
   });

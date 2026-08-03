@@ -613,24 +613,14 @@ if (window.self === window.top) {
     <div class="kpi-sub" id="kpiAutoOffSub">&nbsp;</div>
   </div>
   <div class="kpi-card danger">
-    <div class="kpi-label">High-risk pros to outreach</div>
+    <div class="kpi-label">Confirmed pros with no matching position experience</div>
     <div class="kpi-value" id="kpiHighRisk">&ndash;</div>
     <div class="kpi-sub" id="kpiHighRiskSub">&nbsp;</div>
-  </div>
-  <div class="kpi-card warn">
-    <div class="kpi-label">Medium-risk pros to watch</div>
-    <div class="kpi-value" id="kpiMedRisk">&ndash;</div>
-    <div class="kpi-sub" id="kpiMedRiskSub">&nbsp;</div>
   </div>
   <div class="kpi-card warn">
     <div class="kpi-label">Shifts needing bonus/overfill</div>
     <div class="kpi-value" id="kpiNeedsBonus">&ndash;</div>
     <div class="kpi-sub" id="kpiNeedsBonusSub">&nbsp;</div>
-  </div>
-  <div class="kpi-card good">
-    <div class="kpi-label">Healthy shifts (3-day)</div>
-    <div class="kpi-value" id="kpiHealthy">&ndash;</div>
-    <div class="kpi-sub" id="kpiHealthySub">&nbsp;</div>
   </div>
 </div>
 
@@ -749,7 +739,7 @@ if (window.self === window.top) {
   <summary class="panel-summary">
     <div>
       <h2>Pro Outreach Queue<span class="count-pill" id="outreachCount">0</span></h2>
-      <div class="panel-desc">Every pro ops has flagged for review &mdash; low ratings, low completion, cancellations, or lack of experience in that skill &mdash; sorted by severity. Built from the <a class="inline-link" href="https://docs.google.com/spreadsheets/d/1Ry1cozuvFYRYPv8dg449WaC2mDykAtScb1R1JLmGbjM/edit?gid=1635271142#gid=1635271142" target="_blank" rel="noopener">BF5 Pros to Review tab &#8599;</a></div>
+      <div class="panel-desc">Only confirmed pros whose profile has no matching skill or experience for the assigned position, or who have never completed a paid shift in that position.</div>
     </div>
     <span class="toggle-btn"><span class="chevron">&#9660;</span> Toggle</span>
   </summary>
@@ -764,28 +754,20 @@ if (window.self === window.top) {
       <select class="filter-select" id="outreachMarketFilter"><option value="">All markets</option></select>
       <div class="multiselect" id="outreachSkillFilter"><button type="button" class="filter-select multiselect-btn">All skillsets</button><div class="multiselect-panel"></div></div>
       <select class="filter-select" id="outreachTypeFilter"><option value="">Shift type: All</option></select>
-      <select class="filter-select" id="outreachTierFilter">
-        <option value="">All severities</option>
-        <option value="high">High severity only</option>
-        <option value="medium">Medium severity only</option>
-        <option value="low">Low severity only</option>
-      </select>
     </div>
     <div class="table-scroll">
       <table id="outreachTable">
         <thead>
           <tr>
-            <th class="sortable" data-sort="score">Severity <span class="arrow">&#9660;</span></th>
+            <th>Qualification gap</th>
             <th>Pro</th>
             <th>Phone</th>
             <th>Business</th>
             <th>Skill</th>
             <th>Shift Type</th>
             <th class="sortable" data-sort="date">Shift <span class="arrow">&#9650;</span></th>
-            <th>Why flagged</th>
-            <th>Rating</th>
-            <th>Completion (life / 30d)</th>
-            <th>Cancels (30d)</th>
+            <th>Profile skill</th>
+            <th>Prior paid position shifts</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -1252,6 +1234,29 @@ function assessRisk(r, skipOpsBump) {
   return { score, tier, reasons };
 }
 
+// Outreach is intentionally narrower than the broader shift-health model:
+// only confirmed pros with a position-qualification gap belong in the queue.
+function assessQualificationGap(r) {
+  const reasons = [];
+  const profileStatus = String(r[OCOLS.hkCertified] || '').trim();
+  const normalizedProfileStatus = profileStatus.toLowerCase();
+  const hasProfileMatch = !['', 'no', 'neither'].includes(normalizedProfileStatus)
+    && r[OCOLS.relevantHkExperience] !== 'No';
+  const priorPaidShifts = Number(r[OCOLS.priorHkShifts]) || 0;
+  const hasWorkedPosition = priorPaidShifts > 0 || r[OCOLS.workedHkBefore] === 'Yes';
+
+  if (!hasProfileMatch) reasons.push('No matching skill/experience on profile');
+  if (!hasWorkedPosition) reasons.push(`No prior paid ${r[OCOLS.skill]} shifts`);
+
+  return {
+    flagged: Boolean(r[OCOLS.confirmedAt]) && reasons.length > 0,
+    reasons,
+    profileStatus: profileStatus || 'Unknown',
+    hasProfileMatch,
+    priorPaidShifts,
+  };
+}
+
 // ---- Group outreach rows into shifts ----
 function buildOutreachShifts(rows) {
   const map = new Map();
@@ -1338,11 +1343,7 @@ const standardOutreachShifts = outreachShifts.filter(s => isInStandardWindow(s.s
 const outreachRollups = buildOutreachBusinessRollups(standardOutreachShifts);
 
 // ============ Render: Pro Outreach Queue ============
-let outreachSort = { key: 'score', dir: -1 };
-// Ops-curated flags don't always trip the numeric heuristic — display 'ok' as
-// a "Low" severity tier here rather than implying nothing was found.
-const SEVERITY_LABEL = { high: 'High', medium: 'Medium', ok: 'Low' };
-const SEVERITY_BADGE_CLASS = { high: 'high', medium: 'medium', ok: 'gray' };
+let outreachSort = { key: 'date', dir: 1 };
 
 function renderOutreachQueue() {
   const tbody = document.querySelector('#outreachTable tbody');
@@ -1351,19 +1352,18 @@ function renderOutreachQueue() {
   const market = document.getElementById('outreachMarketFilter').value;
   const skills = outreachSkillMS.getSelected();
   const shiftType = document.getElementById('outreachTypeFilter').value;
-  const tierFilter = document.getElementById('outreachTierFilter').value;
 
   const now = new Date();
   const cutoff = windowHours > 0 ? new Date(now.getTime() + windowHours * 3600 * 1000) : null;
 
-  let entries = REVIEW_ROWS.map(r => ({ row: r, risk: assessRisk(r, true) }));
+  let entries = OUTREACH_ROWS
+    .map(r => ({ row: r, qualification: assessQualificationGap(r) }))
+    .filter(e => e.qualification.flagged);
 
   entries = entries.filter(e => {
     const r = e.row;
     const d = parseDate(r[OCOLS.shiftDate]);
     if (cutoff && (d < now || d > cutoff)) return false;
-    const effTier = e.risk.tier === 'ok' ? 'low' : e.risk.tier;
-    if (tierFilter && effTier !== tierFilter) return false;
     if (market && r[OCOLS.market] !== market) return false;
     if (skills.size && !skills.has(r[OCOLS.skill])) return false;
     if (shiftType && r[OCOLS.shiftType] !== shiftType) return false;
@@ -1372,41 +1372,30 @@ function renderOutreachQueue() {
   });
 
   entries.sort((a, b) => {
-    let cmp = 0;
-    if (outreachSort.key === 'score') cmp = a.risk.score - b.risk.score;
-    else if (outreachSort.key === 'date') cmp = parseDate(a.row[OCOLS.shiftDate]) - parseDate(b.row[OCOLS.shiftDate]);
-    return cmp * outreachSort.dir;
+    return (parseDate(a.row[OCOLS.shiftDate]) - parseDate(b.row[OCOLS.shiftDate])) * outreachSort.dir;
   });
 
   document.getElementById('outreachCount').textContent = entries.length;
   if (!entries.length) {
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="11">No flagged pros match these filters — nice and quiet.</td></tr>';
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="9">No confirmed pros with a position-qualification gap match these filters.</td></tr>';
     return;
   }
 
   tbody.innerHTML = entries.map(e => {
     const r = e.row;
-    const rating = r[OCOLS.avgRating];
-    const ratingsCount = r[OCOLS.ratingsCount] || 0;
-    const compLife = r[OCOLS.completionLifetime];
-    const comp30 = r[OCOLS.completion30d];
-    const cancels = r[OCOLS.cancels30d] || 0;
-    const cancelRate = r[OCOLS.cancelRate30d];
-    const reasonChips = e.risk.reasons.map(reason => `<span class="reason-chip">${escapeHtml(reason)}</span>`).join('') || '<span class="reason-chip">Flagged by ops for review</span>';
+    const reasonChips = e.qualification.reasons.map(reason => `<span class="reason-chip">${escapeHtml(reason)}</span>`).join('');
     const phone = r[OCOLS.proPhone];
     const shiftUrl = gigApplicantsUrl(r[OCOLS.locationId], r[OCOLS.shiftId]);
     return `<tr>
-      <td><span class="badge ${SEVERITY_BADGE_CLASS[e.risk.tier]}">${SEVERITY_LABEL[e.risk.tier]} &middot; ${e.risk.score}</span></td>
+      <td>${reasonChips}</td>
       <td>${escapeHtml(r[OCOLS.proName])}<div class="sub-line">${escapeHtml(r[OCOLS.selectionSource])}</div></td>
       <td>${phone ? `<a class="tel-link" href="tel:${escapeHtml(phone)}">${escapeHtml(phone)}</a>` : '&mdash;'}</td>
       <td>${businessLink(r[OCOLS.business], shiftUrl, r[OCOLS.market])}</td>
       <td>${escapeHtml(r[OCOLS.skill])}</td>
       <td>${escapeHtml(formatShiftType(r[OCOLS.shiftType]))}</td>
       <td><a class="shift-link" href="${shiftUrl}" target="_blank" rel="noopener">${fmtDate(r[OCOLS.shiftDate])} &#8599;</a></td>
-      <td>${reasonChips}</td>
-      <td>${rating != null ? rating.toFixed(2) + '★' : '&mdash;'}<div class="sub-line">${ratingsCount} ratings</div></td>
-      <td>${compLife != null ? compLife + '%' : '&mdash;'} / ${comp30 != null ? comp30 + '%' : '&mdash;'}</td>
-      <td>${cancels}${cancelRate != null ? ` (${cancelRate}%)` : ''}</td>
+      <td><span class="badge ${e.qualification.hasProfileMatch ? 'ok' : 'high'}">${escapeHtml(e.qualification.profileStatus)}</span></td>
+      <td><span class="badge ${e.qualification.priorPaidShifts > 0 ? 'ok' : 'high'}">${e.qualification.priorPaidShifts}</span></td>
     </tr>`;
   }).join('');
 }
@@ -1710,25 +1699,16 @@ function renderKPIs() {
   document.getElementById('kpiAutoOff').textContent = autoOff.length;
   document.getElementById('kpiAutoOffSub').textContent = `${autoOffPros} pros won't auto-fill`;
 
-  const reviewNext3 = REVIEW_ROWS.filter(r => isInStandardWindow(r[OCOLS.shiftDate]));
-  let highRisk = 0, medRisk = 0;
-  reviewNext3.forEach(r => {
-    const tier = assessRisk(r, true).tier;
-    if (tier === 'high') highRisk++;
-    else medRisk++; // 'medium' and ops-flagged-only ('ok') both count as at least worth a look
-  });
-  document.getElementById('kpiHighRisk').textContent = highRisk;
-  document.getElementById('kpiHighRiskSub').textContent = 'next 3 days · no-shows, low ratings, low completion';
-  document.getElementById('kpiMedRisk').textContent = medRisk;
-  document.getElementById('kpiMedRiskSub').textContent = 'next 3 days · worth a check-in text';
+  const qualificationRisk = OUTREACH_ROWS.filter(r =>
+    isInStandardWindow(r[OCOLS.shiftDate]) && assessQualificationGap(r).flagged
+  );
+  document.getElementById('kpiHighRisk').textContent = qualificationRisk.length;
+  document.getElementById('kpiHighRiskSub').textContent = 'next 3 days · profile match or prior position history missing';
 
   const needsBonus = standardOutreachShifts.filter(s => s.action === 'bonus').length;
   document.getElementById('kpiNeedsBonus').textContent = needsBonus;
   document.getElementById('kpiNeedsBonusSub').textContent = 'fully booked, no cancellation cushion';
 
-  const healthyShifts = standardOutreachShifts.filter(s => s.action === 'healthy').length;
-  document.getElementById('kpiHealthy').textContent = healthyShifts;
-  document.getElementById('kpiHealthySub').textContent = `of ${standardOutreachShifts.length} shifts in the 3-day window`;
 }
 
 // ============ Chart: 3-day pipeline outlook ============
@@ -1802,11 +1782,11 @@ months.forEach(m => {
   document.getElementById(id).addEventListener('input', renderPipeline);
 });
 
-const outreachMarkets = Array.from(new Set(REVIEW_ROWS.map(r => r[OCOLS.market]))).sort();
-const outreachSkills = Array.from(new Set(REVIEW_ROWS.map(r => r[OCOLS.skill]))).sort();
+const outreachMarkets = Array.from(new Set(OUTREACH_ROWS.map(r => r[OCOLS.market]))).sort();
+const outreachSkills = Array.from(new Set(OUTREACH_ROWS.map(r => r[OCOLS.skill]))).sort();
 populateSelect('outreachMarketFilter', outreachMarkets);
 const outreachSkillMS = createMultiSelect('outreachSkillFilter', outreachSkills, () => renderOutreachQueue());
-['outreachSearch', 'outreachWindowFilter', 'outreachMarketFilter', 'outreachTypeFilter', 'outreachTierFilter'].forEach(id => {
+['outreachSearch', 'outreachWindowFilter', 'outreachMarketFilter', 'outreachTypeFilter'].forEach(id => {
   document.getElementById(id).addEventListener('input', renderOutreachQueue);
 });
 ['bonusSearch', 'bonusActionFilter', 'bonusTypeFilter'].forEach(id => {
@@ -1814,7 +1794,7 @@ const outreachSkillMS = createMultiSelect('outreachSkillFilter', outreachSkills,
 });
 document.querySelectorAll('#outreachTable th.sortable').forEach(th => th.addEventListener('click', () => {
   const key = th.dataset.sort;
-  outreachSort.dir = (outreachSort.key === key) ? -outreachSort.dir : (key === 'score' ? -1 : 1);
+  outreachSort.dir = (outreachSort.key === key) ? -outreachSort.dir : 1;
   outreachSort.key = key;
   renderOutreachQueue();
 }));
@@ -1866,7 +1846,7 @@ renderPipeline();
   const highRiskCount = parseInt(document.getElementById('kpiHighRisk').textContent, 10) || 0;
   const messages = [];
   if (unfilledCount > 0) messages.push(`${unfilledCount} shifts still unfilled!`);
-  if (highRiskCount > 0) messages.push(`${highRiskCount} high-risk pros to watch`);
+  if (highRiskCount > 0) messages.push(`${highRiskCount} confirmed pros lack position history`);
   if (!messages.length) messages.push('All quiet on set! ✅');
   messages.push('Ready to serve the next fill.');
   messages.push('Service is looking sharp! ✨');
