@@ -6,10 +6,10 @@ vip-outreach.html.
 Sources:
 - 'VIP' sheet (Redshift import) — one row per upcoming shift at a VIP
   business, with fill status and auto-select flag.
-- 'VIP Outreach' sheet ('Coefficient_Raw' tab) — candidate rows for confirmed
-  pros with a qualification signal missing. The dashboard applies the final
-  outreach rule: both the profile match and prior paid position history must
-  be missing.
+- User-owned 'bf5 joms' sheet ('VIP' tab) — all confirmed VIP pros plus current
+  profile evidence, prior paid same-position history, and same-position ratings.
+  The dashboard applies the final outreach rule: both experience signals are
+  missing, or the pro's prior same-position rating is below 4.0.
 - 'VIP Outreach' sheet ('Notes' tab) — outreach notes and assigned agent,
   joined back to the raw qualification-risk rows by row_key.
 """
@@ -23,8 +23,9 @@ from datetime import datetime, timedelta, timezone
 
 SHIFT_SHEET_ID = "1b4Le5-0Uev8ji9ziCcvSh1MOERKWqeAwZyiPj8RtBkc"
 SHIFT_GID = "849611260"
-OUTREACH_SHEET_ID = "1k5oRyKF4RfMs9pvB7WVGLICKM6R-4MI10ZbTvk76PPw"
-OUTREACH_GID = "1630000904"
+OUTREACH_SHEET_ID = "1Ry1cozuvFYRYPv8dg449WaC2mDykAtScb1R1JLmGbjM"
+OUTREACH_GID = "599864705"
+OUTREACH_NOTES_SHEET_ID = "1k5oRyKF4RfMs9pvB7WVGLICKM6R-4MI10ZbTvk76PPw"
 OUTREACH_NOTES_GID = "930242576"
 
 SHIFT_COLUMNS = [
@@ -35,7 +36,9 @@ SHIFT_COLUMNS = [
 OUTREACH_COLUMNS = [
     "row_key", "pro_name", "pro_phone_number", "outreach_status", "verified_status",
     "hours_to_start", "start_time", "location_name", "market", "skillset_type",
-    "pro_id", "gig_id", "has_matching_profile_skill", "prior_paid_same_skill_shifts",
+    "pro_id", "gig_id", "has_matching_profile_skill", "profile_match_source",
+    "prior_paid_same_skill_shifts", "position_avg_rating", "position_ratings_count",
+    "overall_avg_rating", "overall_ratings_count", "poor_position_rating",
     "qualification_gap", "notes", "agent_name",
 ]
 
@@ -185,7 +188,13 @@ def parse_outreach_rows(raw_rows, notes_by_key):
             to_int(get(r, "pro_id")),
             to_int(get(r, "gig_id")),
             clean(get(r, "has_matching_profile_skill")),
+            clean(get(r, "profile_match_source")),
             to_int(get(r, "prior_paid_same_skill_shifts")),
+            to_float(get(r, "position_avg_rating")),
+            to_int(get(r, "position_ratings_count")),
+            to_float(get(r, "overall_avg_rating")),
+            to_int(get(r, "overall_ratings_count")),
+            clean(get(r, "poor_position_rating")),
             clean(get(r, "qualification_gap")),
             note.get("notes"),
             note.get("agent_name"),
@@ -198,7 +207,7 @@ def main():
     if not shift_rows:
         raise SystemExit("Refusing to update: VIP shift sheet came back empty")
 
-    notes_by_key = parse_notes(fetch_rows(OUTREACH_SHEET_ID, OUTREACH_NOTES_GID))
+    notes_by_key = parse_notes(fetch_rows(OUTREACH_NOTES_SHEET_ID, OUTREACH_NOTES_GID))
     outreach_rows = parse_outreach_rows(
         fetch_rows(OUTREACH_SHEET_ID, OUTREACH_GID),
         notes_by_key,
