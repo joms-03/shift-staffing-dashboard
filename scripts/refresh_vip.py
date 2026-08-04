@@ -7,9 +7,10 @@ Sources:
 - 'VIP' sheet (Redshift import) — one row per upcoming shift at a VIP
   business, with fill status and auto-select flag.
 - User-owned 'bf5 joms' sheet ('VIP' tab) — all confirmed VIP pros plus current
-  profile evidence, prior paid same-position history, and same-position ratings.
-  The dashboard applies the final outreach rule: both experience signals are
-  missing, or the pro's prior same-position rating is below 4.0.
+  same- or higher-tier profile/badge evidence, qualifying prior paid work, and
+  exact assigned-position ratings. The dashboard applies the final outreach
+  rule: both qualification signals are missing, or the assigned-position
+  rating is below 4.0.
 - 'VIP Outreach' sheet ('Notes' tab) — outreach notes and assigned agent,
   joined back to the raw qualification-risk rows by row_key.
 """

@@ -9,9 +9,9 @@ date) inside index.html:
   surface locations with no payment information in Needs Approval/Attention.
 - REVIEW_ROWS: the 'BF5 Pros to Review' tab (ops-curated) — full pipeline,
   drives the Pro Outreach Queue.
-- OUTREACH_ROWS: the 'BF5 7-Day Review' tab — comprehensive near-term
-  per-pro roster (flagged and clean), drives Shift Health and the
-  Business Fill & Bonus Needs rollup.
+- OUTREACH_ROWS: the user-owned 'BF5 Confirmed Pros' import — comprehensive
+  tier-aware per-pro roster with assigned-position ratings. The dashboard
+  applies its own next-3-day window and drives Shift Health and outreach.
 """
 
 import csv
@@ -24,7 +24,7 @@ from datetime import datetime, timezone
 SHIFT_SHEET_ID = "1Ry1cozuvFYRYPv8dg449WaC2mDykAtScb1R1JLmGbjM"
 SHIFT_GID = "2006814828"
 REVIEW_GID = "1635271142"
-SEVENDAY_GID = "1327008017"
+CONFIRMED_GID = "226297878"
 RAW_SHIFT_GID = "165226170"
 PAYMENT_GID = "464653222"
 
@@ -72,6 +72,8 @@ SOURCE_COLUMN_MAP = {
     "confirmation_timestamp": "confirmation_timestamp",
     "selection_source": "selection_source",
     "pro_phone_number": "pro_phone_number",
+    "position_avg_rating": "position_avg_rating",
+    "position_ratings_count": "position_ratings_count",
 }
 # Output order — must match OCOLS in index.html.
 PRO_COLUMNS = [
@@ -86,7 +88,7 @@ PRO_COLUMNS = [
     "pro_cancellations_last_30_days", "pro_cancel_rate_last_30_days_pct",
     "no_shows_last_30_days", "distance_from_pro_last_seen_to_business_miles",
     "pro_last_seen_at", "confirmation_timestamp", "selection_source",
-    "pro_phone_number",
+    "pro_phone_number", "position_avg_rating", "position_ratings_count",
 ]
 SHIFT_LINK_COLUMNS = [
     "business_name", "location_id", "shift_id", "shift_date", "skill",
@@ -100,13 +102,16 @@ INT_COLS = {
     "location_id", "shift_id", "requested_pros", "confirmed_pros", "pro_id",
     "prior_paid_housekeeping_shifts", "prior_paid_housekeeping_shifts_same_business",
     "ratings_count", "completed_shifts_lifetime", "pro_cancellations_last_30_days",
-    "no_shows_last_30_days",
+    "no_shows_last_30_days", "position_ratings_count",
 }
 PCT_COLS = {
     "completion_rate_lifetime_pct", "completion_rate_last_30_days_pct",
     "pro_cancel_rate_last_30_days_pct",
 }
-FLOAT_COLS = {"avg_rating", "distance_from_pro_last_seen_to_business_miles"} | PCT_COLS
+FLOAT_COLS = {
+    "avg_rating", "position_avg_rating",
+    "distance_from_pro_last_seen_to_business_miles",
+} | PCT_COLS
 DATE_COLS = {"shift_date", "pro_last_seen_at", "confirmation_timestamp"}
 
 # Sheet mixes "2026-07-22 7:00:00" (ISO, unpadded hour) and
@@ -200,10 +205,11 @@ def parse_pro_rows(rows):
     records = [r for r in rows[header_idx + 1:] if r and r[0]]
     out = []
     for r in records:
-        out.append([
-            coerce(col, r[idx[SOURCE_COLUMN_MAP[col]]] if idx.get(SOURCE_COLUMN_MAP[col], -1) < len(r) else "")
-            for col in PRO_COLUMNS
-        ])
+        def source_value(col):
+            position = idx.get(SOURCE_COLUMN_MAP[col])
+            return r[position] if position is not None and position < len(r) else ""
+
+        out.append([coerce(col, source_value(col)) for col in PRO_COLUMNS])
     return out
 
 
@@ -253,8 +259,8 @@ def main():
     review_rows = parse_pro_rows(fetch_rows(SHIFT_SHEET_ID, REVIEW_GID))
     validate("REVIEW_ROWS", review_rows)
 
-    sevenday_rows = parse_pro_rows(fetch_rows(SHIFT_SHEET_ID, SEVENDAY_GID))
-    validate("OUTREACH_ROWS", sevenday_rows)
+    confirmed_rows = parse_pro_rows(fetch_rows(SHIFT_SHEET_ID, CONFIRMED_GID))
+    validate("OUTREACH_ROWS", confirmed_rows)
 
     shift_link_rows = parse_shift_link_rows(fetch_rows(SHIFT_SHEET_ID, RAW_SHIFT_GID))
     validate("SHIFT_LINK_ROWS", shift_link_rows)
@@ -273,7 +279,7 @@ def main():
         "SHIFT_LINK_ROWS": shift_link_rows,
         "PAYMENT_ROWS": payment_rows,
         "REVIEW_ROWS": review_rows,
-        "OUTREACH_ROWS": sevenday_rows,
+        "OUTREACH_ROWS": confirmed_rows,
     }
     for key, value in arrays.items():
         pattern = re.compile(rf"const {key} = \[.*?\];", re.DOTALL)
@@ -300,7 +306,7 @@ def main():
           f"SEC2={len(sections['SEC2'])} rows, SEC3={len(sections['SEC3'])} rows, "
           f"SHIFT_LINK_ROWS={len(shift_link_rows)} rows, "
           f"PAYMENT_ROWS={len(payment_rows)} rows, "
-          f"REVIEW_ROWS={len(review_rows)} rows, OUTREACH_ROWS={len(sevenday_rows)} rows, "
+          f"REVIEW_ROWS={len(review_rows)} rows, OUTREACH_ROWS={len(confirmed_rows)} rows, "
           f"snapshot={snapshot}")
 
 

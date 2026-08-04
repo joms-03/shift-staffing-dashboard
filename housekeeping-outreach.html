@@ -434,7 +434,7 @@ if (window.self === window.top) {
   <summary class="panel-summary">
     <div>
       <h2>Pro Outreach Queue<span class="count-pill" id="outreachCount">0</span></h2>
-      <div class="panel-desc">Only confirmed pros who are missing both Housekeeping qualification signals, or whose available overall rating is poor despite prior Housekeeping experience.</div>
+      <div class="panel-desc">Housekeeping is the top Facilities tier, so only Housekeeping profile/badge evidence or prior Housekeeping work clears the qualification check; poor available overall ratings still flag experienced pros.</div>
     </div>
     <span class="toggle-btn"><span class="chevron">&#9660;</span> Toggle</span>
   </summary>
@@ -459,8 +459,8 @@ if (window.self === window.top) {
             <th>Business</th>
             <th class="sortable" data-sort="date">Shift <span class="arrow">&#9650;</span></th>
             <th>Shift Type</th>
-            <th>Profile skill</th>
-            <th>Prior paid Housekeeping shifts</th>
+            <th>Profile / badge tier match</th>
+            <th>Prior qualifying shifts</th>
             <th>Overall rating</th>
           </tr>
         </thead>
@@ -641,9 +641,10 @@ function assessRisk(r) {
 }
 
 // The outreach queue is narrower than the shift-health model: flag confirmed
-// pros missing both Housekeeping qualification signals, plus experienced pros
-// whose available overall rating is poor while position-specific ratings remain
-// unavailable in the source.
+// pros missing both Housekeeping qualification signals. Housekeeping is the
+// top Facilities tier, so no other Facilities skill can qualify upward.
+// Experienced pros with poor available overall ratings remain flagged because
+// position-specific ratings are not available in this source.
 function assessQualificationGap(r) {
   const reasons = [];
   const profileStatus = String(r[COLS.hkCertified] || '').trim();
@@ -1018,7 +1019,7 @@ function renderKPIs(shifts, rollups) {
   document.getElementById('kpiUnfilledSub').textContent = `across ${unfilledShifts} shift${unfilledShifts !== 1 ? 's' : ''}`;
 
   document.getElementById('kpiHighRisk').textContent = qualificationRisk;
-  document.getElementById('kpiHighRiskSub').textContent = 'both qualification signals missing or poor overall rating';
+  document.getElementById('kpiHighRiskSub').textContent = 'no Housekeeping evidence or poor available overall rating';
 
   document.getElementById('kpiNeedsFill').textContent = needsFill;
   document.getElementById('kpiNeedsFillSub').textContent = 'open slots with no pro yet';
