@@ -6,7 +6,9 @@ date) inside index.html:
 - SHIFT_LINK_ROWS: exact location and shift IDs from the source import tab,
   used by every clickable Business name.
 - PAYMENT_ROWS: the hourly 'BF5 Location Payment Status' import, used to
-  surface locations with no payment information in Needs Approval/Attention.
+  surface locations with no active location- or organization-level billing
+  setup in Needs Approval/Attention. Active invoice accounts count as setup
+  even when they do not have a saved card/bank payment source.
 - REVIEW_ROWS: the 'BF5 Pros to Review' tab (ops-curated) — full pipeline,
   drives the Pro Outreach Queue.
 - OUTREACH_ROWS: the user-owned 'BF5 Confirmed Pros' import — comprehensive
