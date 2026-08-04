@@ -1,71 +1,43 @@
 -- BF5 Location Payment Status
 --
--- An active invoicing customer is valid billing setup even when it uses a
--- custom invoice and therefore has no saved card/bank payment_source. Billing
--- can be attached directly to the location or inherited from its organization.
+-- Use the same authoritative billing source selected on the Qwick location
+-- Billing page. Location billing is configured when the selected location has
+-- a billing customer. Organization billing is configured when the selected
+-- organization has a billing customer. This covers both saved payment methods
+-- and invoice terms without depending on optional inv_customers metadata.
 WITH upcoming_locations AS (
   SELECT DISTINCT location_id
   FROM reporting.mv_core_applications_v3
   WHERE gig_start_time_local >= CURRENT_DATE - INTERVAL '1 day'
     AND gig_start_time_local < CURRENT_DATE + INTERVAL '31 days'
     AND location_id IS NOT NULL
-),
-location_billing AS (
-  SELECT
-    metadata.location_id::varchar AS location_id,
-    MAX(CASE WHEN active = TRUE THEN 1 ELSE 0 END) AS has_billing,
-    MAX(CASE WHEN active = TRUE AND payment_source IS NOT NULL THEN 1 ELSE 0 END) AS has_saved_payment_source
-  FROM invoicing.inv_customers
-  WHERE metadata.location_id IS NOT NULL
-  GROUP BY 1
-),
-organization_billing AS (
-  SELECT
-    metadata.org_id::varchar AS organization_id,
-    MAX(CASE WHEN active = TRUE THEN 1 ELSE 0 END) AS has_billing,
-    MAX(CASE WHEN active = TRUE AND payment_source IS NOT NULL THEN 1 ELSE 0 END) AS has_saved_payment_source
-  FROM invoicing.inv_customers
-  WHERE metadata.org_id IS NOT NULL
-  GROUP BY 1
 )
 SELECT
-  l.location_id,
-  l.location_name,
-  l.approval_status,
+  r.location_id,
+  r.location_name,
+  r.approval_status,
   CASE
-    WHEN COALESCE(lb.has_billing, 0) = 1 OR COALESCE(ob.has_billing, 0) = 1 THEN 'Yes'
+    WHEN UPPER(COALESCE(loc.billing_source, '')) = 'LOCATION'
+     AND loc.billing_customer_id IS NOT NULL THEN 'Yes'
+    WHEN UPPER(COALESCE(loc.billing_source, '')) = 'ORGANIZATION'
+     AND org.billing_customer_id IS NOT NULL THEN 'Yes'
     ELSE 'No'
   END AS has_payment_information,
   CASE
-    WHEN COALESCE(lb.has_billing, 0) = 1 AND COALESCE(ob.has_billing, 0) = 1 THEN
-      CASE
-        WHEN COALESCE(lb.has_saved_payment_source, 0) = 1
-         AND COALESCE(ob.has_saved_payment_source, 0) = 1
-          THEN 'Location + Organization payment method'
-        WHEN COALESCE(lb.has_saved_payment_source, 0) = 1
-          THEN 'Location payment method + Organization invoice'
-        WHEN COALESCE(ob.has_saved_payment_source, 0) = 1
-          THEN 'Location invoice + Organization payment method'
-        ELSE 'Location + Organization invoice'
-      END
-    WHEN COALESCE(lb.has_billing, 0) = 1 THEN
-      CASE
-        WHEN COALESCE(lb.has_saved_payment_source, 0) = 1 THEN 'Location payment method'
-        ELSE 'Location invoice'
-      END
-    WHEN COALESCE(ob.has_billing, 0) = 1 THEN
-      CASE
-        WHEN COALESCE(ob.has_saved_payment_source, 0) = 1 THEN 'Organization payment method'
-        ELSE 'Organization invoice'
-      END
-    ELSE 'None'
+    WHEN UPPER(COALESCE(loc.billing_source, '')) = 'LOCATION'
+     AND loc.billing_customer_id IS NOT NULL THEN 'Location billing account'
+    WHEN UPPER(COALESCE(loc.billing_source, '')) = 'ORGANIZATION'
+     AND org.billing_customer_id IS NOT NULL THEN 'Organization billing account'
+    WHEN UPPER(COALESCE(loc.billing_source, '')) = 'LOCATION' THEN 'Location billing incomplete'
+    WHEN UPPER(COALESCE(loc.billing_source, '')) = 'ORGANIZATION' THEN 'Organization billing incomplete'
+    ELSE 'No billing source'
   END AS payment_information_scope
 FROM upcoming_locations u
-JOIN reporting.mv_core_locations_v3 l
-  ON l.location_id = u.location_id
-LEFT JOIN location_billing lb
-  ON lb.location_id = l.location_id::varchar
-LEFT JOIN organization_billing ob
-  ON ob.organization_id = l.organization_id::varchar
-ORDER BY l.location_id
+JOIN reporting.mv_core_locations_v3 r
+  ON r.location_id = u.location_id
+JOIN public.db_locations_location loc
+  ON loc.id = u.location_id
+LEFT JOIN public.db_organizations_organization org
+  ON org.id = loc.organization_id
+ORDER BY r.location_id
 LIMIT 5000;
