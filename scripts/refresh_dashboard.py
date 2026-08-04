@@ -10,11 +10,10 @@ date) inside index.html:
   setup in Needs Approval/Attention. The import follows the billing source
   selected on the Qwick Billing page, covering both saved payment methods and
   invoice terms without relying on optional invoicing metadata.
-- REVIEW_ROWS: the 'BF5 Pros to Review' tab (ops-curated) — full pipeline,
-  drives the Pro Outreach Queue.
-- OUTREACH_ROWS: the user-owned 'BF5 Confirmed Pros' import — comprehensive
-  tier-aware per-pro roster with assigned-position ratings. The dashboard
-  applies its own next-3-day window and drives Shift Health and outreach.
+- REVIEW_ROWS / OUTREACH_ROWS: intentionally empty in the public build.
+  Individual Pro records contain names, phone numbers, and operational data
+  that must not be shipped to GitHub Pages. A real authenticated internal
+  deployment is required before those queues can be enabled again.
 """
 
 import csv
@@ -259,11 +258,10 @@ def main():
     for key in ("SEC1", "SEC2", "SEC3"):
         validate(key, sections[key])
 
-    review_rows = parse_pro_rows(fetch_rows(SHIFT_SHEET_ID, REVIEW_GID))
-    validate("REVIEW_ROWS", review_rows)
-
-    confirmed_rows = parse_pro_rows(fetch_rows(SHIFT_SHEET_ID, CONFIRMED_GID))
-    validate("OUTREACH_ROWS", confirmed_rows)
+    # GitHub Pages is public and a client-side password cannot protect data in
+    # the page source. Keep all per-Pro rows out of the published artifact.
+    review_rows = []
+    confirmed_rows = []
 
     shift_link_rows = parse_shift_link_rows(fetch_rows(SHIFT_SHEET_ID, RAW_SHIFT_GID))
     validate("SHIFT_LINK_ROWS", shift_link_rows)
@@ -309,7 +307,8 @@ def main():
           f"SEC2={len(sections['SEC2'])} rows, SEC3={len(sections['SEC3'])} rows, "
           f"SHIFT_LINK_ROWS={len(shift_link_rows)} rows, "
           f"PAYMENT_ROWS={len(payment_rows)} rows, "
-          f"REVIEW_ROWS={len(review_rows)} rows, OUTREACH_ROWS={len(confirmed_rows)} rows, "
+          f"REVIEW_ROWS={len(review_rows)} public-safe rows, "
+          f"OUTREACH_ROWS={len(confirmed_rows)} public-safe rows, "
           f"snapshot={snapshot}")
 
 
