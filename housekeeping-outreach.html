@@ -434,7 +434,7 @@ if (window.self === window.top) {
   <summary class="panel-summary">
     <div>
       <h2>Pro Outreach Queue<span class="count-pill" id="outreachCount">0</span></h2>
-      <div class="panel-desc">Housekeeping is the top Facilities tier, so only Housekeeping profile/badge evidence or prior Housekeeping work clears the qualification check; poor available overall ratings still flag experienced pros.</div>
+      <div class="panel-desc">Tier-aware rule: a pro qualifies for a lower-tier shift when their profile experience, skill badge, or prior paid work matches that role or any higher role on the same ladder. The hierarchy comes from Qwick&rsquo;s <a class="inline-link" href="https://docs.google.com/document/d/1QxXOufeC3Fp_EG6ggFvuhCt7hIkuReeO7VklBv5jCfY/edit?tab=t.0" target="_blank" rel="noopener">Skillset Breakdown</a>. Housekeeping is the top Facilities tier, so only Housekeeping evidence clears this specific queue; poor available overall ratings still flag experienced pros.</div>
     </div>
     <span class="toggle-btn"><span class="chevron">&#9660;</span> Toggle</span>
   </summary>
@@ -511,7 +511,7 @@ if (window.self === window.top) {
   </div>
 </details>
 
-<footer>Auto-refreshed hourly from the Housekeeping pro-history sheet. Risk tiers are computed in-browser from pro rating, completion rate, recent cancellations/no-shows, and housekeeping experience &mdash; thresholds can be tuned without waiting on a data refresh.</footer>
+<footer>Auto-refreshed hourly from the Housekeeping pro-history sheet. Risk tiers are computed in-browser from pro rating, completion rate, recent cancellations/no-shows, and housekeeping experience. Tier relationships are sourced from Qwick&rsquo;s <a class="inline-link" href="https://docs.google.com/document/d/1QxXOufeC3Fp_EG6ggFvuhCt7hIkuReeO7VklBv5jCfY/edit?tab=t.0" target="_blank" rel="noopener">Skillset Breakdown</a>.</footer>
 
 <script>
 // Column order produced by scripts/refresh_housekeeping.py — keep this in sync with COLUMNS there.

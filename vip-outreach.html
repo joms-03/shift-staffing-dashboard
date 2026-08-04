@@ -516,7 +516,7 @@ if (window.self === window.top) {
   <summary class="panel-summary">
     <div>
       <h2>Pro Outreach Queue<span class="count-pill" id="outreachCount">0</span></h2>
-      <div class="panel-desc">Only confirmed pros with no same- or higher-tier profile, badge, or prior-work evidence, or with a poor prior rating in the assigned position.</div>
+      <div class="panel-desc">Tier-aware rule: a pro qualifies for a lower-tier shift when their profile experience, skill badge, or prior paid work matches that role or any higher role on the same ladder. The hierarchy comes from Qwick&rsquo;s <a class="inline-link" href="https://docs.google.com/document/d/1QxXOufeC3Fp_EG6ggFvuhCt7hIkuReeO7VklBv5jCfY/edit?tab=t.0" target="_blank" rel="noopener">Skillset Breakdown</a>. A prior assigned-position rating below 4.0 still flags the pro.</div>
     </div>
     <span class="toggle-btn"><span class="chevron">&#9660;</span> Toggle</span>
   </summary>
@@ -569,7 +569,7 @@ if (window.self === window.top) {
   </div>
 </details>
 
-<footer>Auto-refreshed hourly. The outreach queue contains only confirmed pros with no same- or higher-tier qualification evidence, or a prior assigned-position rating below 4.0.</footer>
+<footer>Auto-refreshed hourly. The outreach queue contains only confirmed pros with no same- or higher-tier qualification evidence, or a prior assigned-position rating below 4.0. Tier relationships are sourced from Qwick&rsquo;s <a class="inline-link" href="https://docs.google.com/document/d/1QxXOufeC3Fp_EG6ggFvuhCt7hIkuReeO7VklBv5jCfY/edit?tab=t.0" target="_blank" rel="noopener">Skillset Breakdown</a>.</footer>
 
 <script>
 // Column order produced by scripts/refresh_vip.py — keep this in sync with SHIFT_COLUMNS there.
