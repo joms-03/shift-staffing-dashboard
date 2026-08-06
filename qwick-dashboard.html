@@ -182,7 +182,7 @@
   <span class="live-dot"></span>
   <span class="agent-status-label">Online now</span>
   <div class="agent-chip-row" id="agentChipRow"></div>
-  <span class="agent-status-snapshot" id="agentSnapshot" data-snapshot-utc="2026-08-05T22:56:33Z"></span>
+  <span class="agent-status-snapshot" id="agentSnapshot" data-snapshot-utc="2026-08-06T00:01:17Z"></span>
 </div>
 
 <nav class="top-tabs" id="topTabs">
@@ -218,7 +218,7 @@
 // (who's scheduled today, in EST) cross-checked against the DTR sheet
 // (who's actually clocked in right now). Only agents who are both
 // scheduled today and currently clocked in appear here.
-const AGENT_STATUS = [{"name": "Angelo", "until": "9:00 PM"}, {"name": "Bryan", "until": "7:00 PM"}, {"name": "Chand", "until": "7:00 PM"}, {"name": "Joms", "until": "7:00 PM"}, {"name": "Rhys", "until": "7:00 PM"}];
+const AGENT_STATUS = [{"name": "Angelo", "until": "9:00 PM"}];
 
 function escapeHtml(s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
