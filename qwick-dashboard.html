@@ -133,6 +133,10 @@
     background: var(--card); border: 1px solid var(--border); border-radius: 20px;
     padding: 2px 10px; color: var(--text); font-weight: 600; white-space: nowrap; font-size: 11.5px;
   }
+  .agent-chip .late-marker {
+    display: inline-block; margin-left: 3px; padding: 0 5px; border-radius: 999px;
+    background: #fde8e3; color: #9c2f1a; font-size: 10px; font-weight: 800;
+  }
   .agent-chip .until { color: var(--muted); font-weight: 500; }
   .agent-status-snapshot { color: var(--muted); font-size: 10.5px; white-space: nowrap; margin-left: auto; }
 </style>
@@ -218,7 +222,7 @@
 // (who's scheduled today, in EST) cross-checked against the DTR sheet
 // (who's actually clocked in right now). Only agents who are both
 // scheduled today and currently clocked in appear here.
-const AGENT_STATUS = [{"name": "Audrey", "until": "5:00 PM"}, {"name": "Bryan", "until": "7:00 PM"}, {"name": "Chand", "until": "7:00 PM"}, {"name": "Cyrus", "until": "7:00 PM"}, {"name": "Joms", "until": "9:00 PM"}, {"name": "Mark", "until": "4:00 PM"}];
+const AGENT_STATUS = [{"name": "Audrey", "until": "5:00 PM", "late": false}, {"name": "Bryan", "until": "7:00 PM", "late": false}, {"name": "Chand", "until": "7:00 PM", "late": false}, {"name": "Cyrus", "until": "7:00 PM", "late": false}, {"name": "Joms", "until": "9:00 PM", "late": false}, {"name": "Mark", "until": "4:00 PM", "late": false}];
 
 function escapeHtml(s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -228,9 +232,12 @@ function escapeHtml(s) {
   const bar = document.getElementById('agentStatusBar');
   const row = document.getElementById('agentChipRow');
   if (!AGENT_STATUS.length) { bar.classList.add('empty'); return; }
-  row.innerHTML = AGENT_STATUS.map(a =>
-    `<span class="agent-chip">${escapeHtml(a.name)} <span class="until">until ${escapeHtml(a.until)} EST</span></span>`
-  ).join('');
+  row.innerHTML = AGENT_STATUS.map(a => {
+    const lateMarker = a.late
+      ? ' <span class="late-marker" aria-label="Clocked in late">Late</span>'
+      : '';
+    return `<span class="agent-chip">${escapeHtml(a.name)}${lateMarker} <span class="until">until ${escapeHtml(a.until)} EST</span></span>`;
+  }).join('');
 
   const snap = document.getElementById('agentSnapshot');
   const iso = snap.dataset.snapshotUtc;

@@ -14,7 +14,8 @@ Sources:
 
 Only agents who are (a) scheduled to work today per the roster and
 (b) currently clocked in (In filled, Out blank) in today's DTR column
-are shown — who's working and until when, nothing about who's off.
+are shown. The DTR clock-in value is also compared with the scheduled
+start so the dashboard can mark an online agent as late.
 """
 
 import csv
@@ -49,6 +50,31 @@ NAME_MAP = {
 
 DAY_COLUMNS = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"]
 EST = ZoneInfo("America/New_York")
+MANILA = ZoneInfo("Asia/Manila")
+
+DAY_ALIASES = {
+    "MON": 0,
+    "MONDAY": 0,
+    "TUE": 1,
+    "TUES": 1,
+    "TUESDAY": 1,
+    "WED": 2,
+    "WEDNESDAY": 2,
+    "THU": 3,
+    "THUR": 3,
+    "THURS": 3,
+    "THURSDAY": 3,
+    "FRI": 4,
+    "FRIDAY": 4,
+    "SAT": 5,
+    "SATURDAY": 5,
+    "SUN": 6,
+    "SUNDAY": 6,
+}
+DAY_TOKEN_PATTERN = re.compile(
+    r"\b(" + "|".join(sorted(DAY_ALIASES, key=len, reverse=True)) + r")\b",
+    flags=re.IGNORECASE,
+)
 
 
 def csv_url(sheet_id, gid):
@@ -113,6 +139,153 @@ def fmt_hour_12(hour24):
     return f"{h12}:00 {period}"
 
 
+def parse_clock_time(value):
+    """Parse a DTR clock-in value into a time-of-day, or return None.
+
+    DTR clock-ins are normally formatted as 24-hour times with optional
+    seconds and fractional seconds, but accepting AM/PM keeps the refresh
+    resilient to a display-format change in the source sheet.
+    """
+    text = str(value or "").strip()
+    match = re.fullmatch(
+        r"(\d{1,2}):(\d{2})(?::(\d{2})(?:\.(\d{1,6}))?)?\s*(AM|PM)?",
+        text,
+        flags=re.IGNORECASE,
+    )
+    if not match:
+        return None
+
+    hour, minute = int(match.group(1)), int(match.group(2))
+    second = int(match.group(3) or 0)
+    microsecond = int((match.group(4) or "").ljust(6, "0"))
+    meridiem = (match.group(5) or "").upper()
+
+    if minute > 59 or second > 59:
+        return None
+    if meridiem:
+        if not 1 <= hour <= 12:
+            return None
+        hour = hour % 12 + (12 if meridiem == "PM" else 0)
+    elif hour > 23:
+        return None
+
+    return datetime.min.replace(
+        hour=hour,
+        minute=minute,
+        second=second,
+        microsecond=microsecond,
+    ).time()
+
+
+def parse_scheduled_time(value):
+    """Parse a DTR schedule time such as '12 PM' or '09:30 AM'."""
+    match = re.fullmatch(r"\s*(\d{1,2})(?::(\d{2}))?\s*(AM|PM)\s*", str(value), flags=re.IGNORECASE)
+    if not match:
+        return None
+    hour, minute = int(match.group(1)), int(match.group(2) or 0)
+    if not 1 <= hour <= 12 or minute > 59:
+        return None
+    hour = hour % 12 + (12 if match.group(3).upper() == "PM" else 0)
+    return datetime.min.replace(hour=hour, minute=minute).time()
+
+
+def parse_schedule_days(value):
+    """Return weekday indexes covered by one DTR schedule segment."""
+    matches = list(DAY_TOKEN_PATTERN.finditer(str(value)))
+    if not matches:
+        return set()
+
+    # A single hyphenated pair represents an inclusive day range. Ranges can
+    # wrap the week, as in "Thursday - Monday".
+    if len(matches) == 2 and re.fullmatch(
+        r"\s*-\s*",
+        str(value)[matches[0].end():matches[1].start()],
+    ):
+        start = DAY_ALIASES[matches[0].group(1).upper()]
+        end = DAY_ALIASES[matches[1].group(1).upper()]
+        days = {start}
+        while start != end:
+            start = (start + 1) % 7
+            days.add(start)
+        return days
+
+    return {DAY_ALIASES[match.group(1).upper()] for match in matches}
+
+
+def scheduled_start_from_dtr(schedule_value, weekday_name, work_date_est, dtr_timezone):
+    """Return today's scheduled start using only the DTR Schedule cell."""
+    schedule_text = str(schedule_value or "").strip()
+    target_day = DAY_COLUMNS.index(weekday_name)
+    default_zone_match = re.search(r"\b(EST|EDT|ET|MNL|PHT)\b", schedule_text, flags=re.IGNORECASE)
+
+    for segment in schedule_text.split("|"):
+        time_range = re.search(
+            r"(?P<start>\d{1,2}(?::\d{2})?\s*(?:AM|PM))\s*-\s*"
+            r"(?P<end>\d{1,2}(?::\d{2})?\s*(?:AM|PM))",
+            segment,
+            flags=re.IGNORECASE,
+        )
+        if not time_range:
+            continue
+
+        covered_days = parse_schedule_days(segment[:time_range.start()].strip(" ,:"))
+        if target_day not in covered_days:
+            continue
+
+        start_time = parse_scheduled_time(time_range.group("start"))
+        if start_time is None:
+            return None
+
+        zone_match = re.search(r"\b(EST|EDT|ET|MNL|PHT)\b", segment, flags=re.IGNORECASE)
+        zone_label = (zone_match or default_zone_match)
+        if zone_label and zone_label.group(1).upper() in {"EST", "EDT", "ET"}:
+            source_timezone = EST
+        elif zone_label and zone_label.group(1).upper() in {"MNL", "PHT"}:
+            source_timezone = MANILA
+        else:
+            source_timezone = dtr_timezone
+
+        scheduled_source = datetime.combine(work_date_est, start_time, tzinfo=source_timezone)
+        return scheduled_source.astimezone(dtr_timezone)
+
+    return None
+
+
+def clock_in_is_late(clock_in_value, schedule_value, weekday_name, work_date_est, dtr_timezone):
+    """Return True only when the DTR clock-in is after the DTR schedule.
+
+    Both values come from the same DTR row. Comparing full datetimes handles
+    starts that cross midnight after timezone conversion (for example, noon ET
+    is midnight in Manila). If either DTR value cannot be read, do not label the
+    person late.
+    """
+    clock_time = parse_clock_time(clock_in_value)
+    scheduled_dtr = scheduled_start_from_dtr(
+        schedule_value,
+        weekday_name,
+        work_date_est,
+        dtr_timezone,
+    )
+    if clock_time is None or scheduled_dtr is None:
+        return False
+
+    # DTR gives us a time-of-day. Pick the occurrence nearest the scheduled
+    # start so an early 11:58 PM clock-in for midnight is not marked late.
+    actual_candidates = [
+        datetime.combine(
+            scheduled_dtr.date() + timedelta(days=offset),
+            clock_time,
+            tzinfo=dtr_timezone,
+        )
+        for offset in (-1, 0, 1)
+    ]
+    actual_dtr = min(
+        actual_candidates,
+        key=lambda candidate: abs((candidate - scheduled_dtr).total_seconds()),
+    )
+    return actual_dtr > scheduled_dtr
+
+
 def get_dtr_service():
     key_path = os.environ["DTR_SERVICE_ACCOUNT_KEY_PATH"]
     creds = service_account.Credentials.from_service_account_file(
@@ -132,9 +305,14 @@ def week_tab_title(today_est):
 def find_week_tab(service, today_est):
     meta = service.spreadsheets().get(spreadsheetId=DTR_SHEET_ID).execute()
     titles = [s["properties"]["title"] for s in meta["sheets"]]
+    timezone_name = meta.get("properties", {}).get("timeZone", "Asia/Manila")
+    try:
+        dtr_timezone = ZoneInfo(timezone_name)
+    except (KeyError, ValueError):
+        raise SystemExit(f"DTR sheet has an invalid timezone: {timezone_name!r}")
     wanted = week_tab_title(today_est)
     if wanted in titles:
-        return wanted
+        return wanted, dtr_timezone
     # Fallback: parse "M/D - M/D" titles (padding varies across older tabs)
     # and find the one whose range actually contains today.
     for title in titles:
@@ -148,7 +326,7 @@ def find_week_tab(service, today_est):
         except ValueError:
             continue
         if start <= today_est <= end:
-            return title
+            return title, dtr_timezone
     raise SystemExit(f"Could not find a DTR tab for the week of {today_est}")
 
 
@@ -175,15 +353,17 @@ def fetch_dtr_clockins(service, tab_title, today_est):
         raise SystemExit(f"Could not find today's ({today_str}) column in DTR tab '{tab_title}'")
 
     name_col = 1
-    clocked_in = set()
+    schedule_col = 2
+    clocked_in = {}
     for r in rows:
         if len(r) <= name_col or not r[name_col].strip():
             continue
         name = r[name_col].strip()
+        schedule_val = r[schedule_col].strip() if schedule_col < len(r) else ""
         in_val = r[in_col].strip() if in_col < len(r) else ""
         out_val = r[in_col + 1].strip() if in_col + 1 < len(r) else ""
         if in_val and not out_val:
-            clocked_in.add(name)
+            clocked_in[name] = {"clock_in": in_val, "schedule": schedule_val}
     return clocked_in
 
 
@@ -199,8 +379,8 @@ def main():
         raise SystemExit("Refusing to update: schedule sheet came back empty")
 
     service = get_dtr_service()
-    tab_title = find_week_tab(service, today_est)
-    clocked_in_names = fetch_dtr_clockins(service, tab_title, today_est)
+    tab_title, dtr_timezone = find_week_tab(service, today_est)
+    clockins_by_name = fetch_dtr_clockins(service, tab_title, today_est)
 
     online = []
     for nickname, days in agents.items():
@@ -208,9 +388,20 @@ def main():
         if not today_shift:
             continue
         full_name = NAME_MAP.get(nickname)
-        if not full_name or full_name not in clocked_in_names:
+        if not full_name or full_name not in clockins_by_name:
             continue
-        online.append({"name": nickname, "until": fmt_hour_12(today_shift[1])})
+        dtr_entry = clockins_by_name[full_name]
+        online.append({
+            "name": nickname,
+            "until": fmt_hour_12(today_shift[1]),
+            "late": clock_in_is_late(
+                dtr_entry["clock_in"],
+                dtr_entry["schedule"],
+                weekday_name,
+                today_est,
+                dtr_timezone,
+            ),
+        })
 
     online.sort(key=lambda a: a["name"])
 
