@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Pull the VIP shift and qualification-risk outreach sheets and regenerate
 the SHIFT_ROWS and OUTREACH_ROWS arrays (and snapshot date) inside
-vip-outreach.html.
+the non-root VIP dashboard page.
 
 Sources:
 - 'VIP' sheet (Redshift import) — one row per upcoming shift at a VIP
@@ -221,7 +221,7 @@ def main():
     # a qualification gap right now, and the dashboard should show zero
     # rather than preserving a stale queue from the prior refresh.
 
-    html_path = "vip-outreach.html"
+    html_path = "ops-portal-a7c93e4b16f28d05c4e9713b/vip.html"
     with open(html_path, "r", encoding="utf-8") as f:
         html = f.read()
 

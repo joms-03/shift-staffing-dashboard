@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Pull the ops Google Sheets and regenerate the data arrays (and snapshot
-date) inside index.html:
+date) inside the non-root BF5 dashboard page:
 
 - SEC1/SEC2/SEC3: the 'Daily Shift Metrics' tab of the shift staffing sheet.
 - SHIFT_LINK_ROWS: exact location and shift IDs from the source import tab,
@@ -77,7 +77,7 @@ SOURCE_COLUMN_MAP = {
     "position_avg_rating": "position_avg_rating",
     "position_ratings_count": "position_ratings_count",
 }
-# Output order — must match OCOLS in index.html.
+# Output order — must match OCOLS in the BF5 dashboard page.
 PRO_COLUMNS = [
     "business_name", "location_id", "shift_id", "shift_date", "market", "skill",
     "requested_pros", "confirmed_pros", "auto_select_status", "shift_type",
@@ -269,7 +269,7 @@ def main():
     payment_rows = parse_payment_rows(fetch_rows(SHIFT_SHEET_ID, PAYMENT_GID))
     validate("PAYMENT_ROWS", payment_rows)
 
-    index_path = "index.html"
+    index_path = "ops-portal-a7c93e4b16f28d05c4e9713b/bf5.html"
     with open(index_path, "r", encoding="utf-8") as f:
         html = f.read()
 

@@ -405,14 +405,14 @@ def main():
 
     online.sort(key=lambda a: a["name"])
 
-    html_path = "qwick-dashboard.html"
+    html_path = "ops-portal-a7c93e4b16f28d05c4e9713b/index.html"
     with open(html_path, "r", encoding="utf-8") as f:
         html = f.read()
 
     replacement = f"const AGENT_STATUS = {json.dumps(online, ensure_ascii=False)};"
     html, count = re.subn(r"const AGENT_STATUS = \[.*?\];", replacement, html, count=1, flags=re.DOTALL)
     if count != 1:
-        raise SystemExit("Could not find AGENT_STATUS array literal in qwick-dashboard.html")
+        raise SystemExit(f"Could not find AGENT_STATUS array literal in {html_path}")
 
     snapshot_iso = now_utc.strftime("%Y-%m-%dT%H:%M:%SZ")
     html = re.sub(

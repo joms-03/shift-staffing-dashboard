@@ -33,10 +33,10 @@ jobs:
         run: |
           git config user.name "shift-dashboard-bot"
           git config user.email "actions@users.noreply.github.com"
-          if git diff --quiet -- index.html vip-outreach.html; then
+          if git diff --quiet -- ops-portal-a7c93e4b16f28d05c4e9713b/bf5.html ops-portal-a7c93e4b16f28d05c4e9713b/vip.html; then
             echo "No data changes."
             exit 0
           fi
-          git add index.html vip-outreach.html
+          git add ops-portal-a7c93e4b16f28d05c4e9713b/bf5.html ops-portal-a7c93e4b16f28d05c4e9713b/vip.html
           git commit -m "Manually refresh VIP and BF5 dashboard data"
           git push

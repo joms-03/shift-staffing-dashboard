@@ -3,7 +3,7 @@
 import fs from "node:fs";
 
 const briefPath = "morning-brief/index.html";
-const dashboardPath = "index.html";
+const dashboardPath = "ops-portal-a7c93e4b16f28d05c4e9713b/bf5.html";
 const brief = fs.readFileSync(briefPath, "utf8");
 const dashboard = fs.readFileSync(dashboardPath, "utf8");
 
