@@ -1,15 +1,13 @@
-name: Refresh dashboard from Google Sheet
+name: Refresh VIP + BF5 dashboards
 
 on:
-  schedule:
-    - cron: "5 * * * *"
   workflow_dispatch: {}
 
 permissions:
   contents: write
 
 concurrency:
-  group: refresh-dashboard
+  group: refresh-vip-bf5-dashboard
   cancel-in-progress: false
 
 jobs:
@@ -22,20 +20,23 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Refresh index.html from the sheet
+      - name: Refresh BF5 from the sheets
         run: python3 scripts/refresh_dashboard.py
 
-      - name: Verify the public build contains no individual Pro records
+      - name: Refresh VIP from the sheets
+        run: python3 scripts/refresh_vip.py
+
+      - name: Verify the public build contains no Pro contact details
         run: python3 scripts/sanitize_public_dashboard.py
 
       - name: Commit and push if changed
         run: |
           git config user.name "shift-dashboard-bot"
           git config user.email "actions@users.noreply.github.com"
-          if git diff --quiet -- index.html; then
+          if git diff --quiet -- index.html vip-outreach.html; then
             echo "No data changes."
             exit 0
           fi
-          git add index.html
-          git commit -m "Auto-refresh dashboard data from sheet"
+          git add index.html vip-outreach.html
+          git commit -m "Manually refresh VIP and BF5 dashboard data"
           git push

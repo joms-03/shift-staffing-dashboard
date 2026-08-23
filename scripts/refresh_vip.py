@@ -12,7 +12,11 @@ Sources:
   rule: both qualification signals are missing, or the assigned-position
   rating is below 4.0.
 - 'VIP Outreach' sheet ('Notes' tab) — outreach notes and assigned agent,
-  joined back to the raw qualification-risk rows by row_key.
+joined back to the raw qualification-risk rows by row_key.
+
+The source phone field is intentionally blanked before publishing. GitHub
+Pages is public, and the page's visual password prompt does not protect its
+source from direct access.
 """
 
 import csv
@@ -178,7 +182,7 @@ def parse_outreach_rows(raw_rows, notes_by_key):
         out.append([
             row_key,
             clean(get(r, "pro_name")),
-            clean(get(r, "pro_phone_number")),
+            None,
             clean(get(r, "outreach_status")),
             clean(get(r, "verified_status")),
             to_float(get(r, "hours_to_start")),

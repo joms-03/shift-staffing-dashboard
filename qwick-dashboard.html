@@ -59,7 +59,6 @@
   }
   .top-tab-link {
     align-self: center;
-    margin-left: auto;
     margin-bottom: 7px;
     border-radius: 999px;
     padding: 7px 13px;
@@ -70,28 +69,11 @@
     font-size: 12px;
     font-weight: 800;
   }
+  .top-tab-link:first-of-type { margin-left: auto; }
   .top-tab-link:hover { background: #315f3d; }
 
   .tab-panel { display: none; }
   .tab-panel.active { display: block; }
-
-  nav.sub-tabs {
-    display: flex; gap: 8px; align-items: center;
-    padding: 16px 28px 0;
-  }
-  .sub-tabs-label { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin-right: 6px; }
-  .sub-tab {
-    appearance: none; cursor: pointer; font: inherit; font-size: 12.5px; font-weight: 700;
-    color: var(--text); background: var(--gray-bg); border: 1px solid var(--border);
-    padding: 6px 14px; border-radius: 20px;
-  }
-  .sub-tab:hover { border-color: var(--accent); }
-  .sub-tab.active { color: var(--accent); background: var(--green-bg); border-color: var(--accent); }
-  .sub-tab.coming-soon { color: var(--muted); cursor: default; }
-  .sub-tab.coming-soon:hover { border-color: var(--border); }
-
-  .sub-panel { display: none; }
-  .sub-panel.active { display: block; }
 
   .embed-frame {
     display: block; width: 100%; border: 0; background: var(--bg);
@@ -155,9 +137,8 @@
   var PASSWORD = 'Ch3f';
   var STORAGE_KEY = 'qwickDashboardAuthed';
   var gate = document.getElementById('authGate');
-  // Defensive: if this page were ever itself embedded in another frame, trust
-  // the parent's gate instead of showing our own (see index.html/
-  // housekeeping-outreach.html for why a nested gate breaks visually).
+  // Defensive: if this page is embedded in another frame, trust the parent
+  // gate instead of showing a nested password prompt.
   if (window.self !== window.top) { gate.remove(); return; }
   if (localStorage.getItem(STORAGE_KEY) === 'yes') { gate.remove(); return; }
   document.getElementById('authForm').addEventListener('submit', function (e) {
@@ -179,7 +160,7 @@
 <header class="hub-head">
   <img class="brand-mark" src="assets/qwick-logo.png" alt="Qwick">
   <h1>Qwick Magic Team Dashboard</h1>
-  <div class="subtitle">One place for Business First 5 and every Magic Team special-task dashboard.</div>
+  <div class="subtitle">One place for Business First 5 and VIP operations.</div>
 </header>
 
 <div class="agent-status-bar" id="agentStatusBar">
@@ -192,8 +173,8 @@
 <nav class="top-tabs" id="topTabs">
   <button class="top-tab" data-tab="bf5">Business First 5</button>
   <button class="top-tab" data-tab="vip">VIP</button>
-  <button class="top-tab" data-tab="magic">Magic Team Special Tasks</button>
   <button class="top-tab" data-tab="game">Shift Rush Game</button>
+  <a class="top-tab-link" href="https://github.com/joms-03/shift-staffing-dashboard/actions/workflows/refresh.yml" target="_blank" rel="noopener" title="Open the manual refresh control in GitHub Actions">Refresh VIP + BF5 ↗</a>
   <a class="top-tab-link" href="qwick-shift-rush.html" target="_blank" rel="noopener">Play Shift Rush ↗</a>
 </nav>
 
@@ -205,16 +186,11 @@
   <iframe class="embed-frame" data-src="vip-outreach.html" title="VIP Pro Outreach Dashboard"></iframe>
 </section>
 
-<section class="tab-panel" id="tab-magic">
-  <nav class="sub-tabs" id="magicSubTabs"><span class="sub-tabs-label">Special task:</span></nav>
-  <div id="magicSubPanels"></div>
-</section>
-
 <section class="tab-panel" id="tab-game">
   <iframe class="embed-frame" data-src="qwick-shift-rush.html" title="Qwick Shift Rush hospitality game"></iframe>
 </section>
 
-<footer class="hub-foot">Each tab loads its own dashboard, which keeps refreshing on its own schedule &mdash; nothing here changes that.</footer>
+<footer class="hub-foot">VIP and BF5 refresh only when requested. Click <strong>Refresh VIP + BF5</strong>, choose <strong>Run workflow</strong> in GitHub, then reload this page after it finishes.</footer>
 
 <script>
 // ---- Who's online: Pro Success / MOPS agents currently clocked in ----
@@ -248,48 +224,6 @@ function escapeHtml(s) {
     }
   }
 })();
-
-// Add a new Magic Team special-task dashboard by adding one entry here.
-// `src: null` renders a "coming soon" sub-tab with no iframe yet.
-const MAGIC_TASKS = [
-  { id: 'housekeeping', label: 'Housekeeping', src: 'housekeeping-outreach.html' },
-];
-
-const magicSubTabsEl = document.getElementById('magicSubTabs');
-const magicSubPanelsEl = document.getElementById('magicSubPanels');
-
-MAGIC_TASKS.forEach((task, i) => {
-  const btn = document.createElement('button');
-  btn.className = 'sub-tab' + (task.src ? '' : ' coming-soon') + (i === 0 ? ' active' : '');
-  btn.dataset.subtab = task.id;
-  btn.textContent = task.label + (task.src ? '' : ' (coming soon)');
-  if (task.src) btn.addEventListener('click', () => activateSubTab(task.id));
-  magicSubTabsEl.appendChild(btn);
-
-  const panel = document.createElement('div');
-  panel.className = 'sub-panel' + (i === 0 ? ' active' : '');
-  panel.id = 'subpanel-' + task.id;
-  if (task.src) {
-    const iframe = document.createElement('iframe');
-    iframe.className = 'embed-frame';
-    iframe.dataset.src = task.src;
-    iframe.title = task.label + ' dashboard';
-    panel.appendChild(iframe);
-  } else {
-    const placeholder = document.createElement('div');
-    placeholder.className = 'embed-loading';
-    placeholder.textContent = task.label + ' dashboard coming soon.';
-    panel.appendChild(placeholder);
-  }
-  magicSubPanelsEl.appendChild(panel);
-});
-
-function activateSubTab(id) {
-  document.querySelectorAll('#magicSubTabs .sub-tab').forEach(el => el.classList.toggle('active', el.dataset.subtab === id));
-  document.querySelectorAll('.sub-panel').forEach(el => el.classList.toggle('active', el.id === 'subpanel-' + id));
-  loadFrame(document.querySelector('#subpanel-' + id + ' iframe'));
-  setHash('magic', id);
-}
 
 // ---- Lazy-load + auto-resize iframes so embedded pages don't get a nested scrollbar ----
 function loadFrame(iframe) {
@@ -330,32 +264,23 @@ window.addEventListener('message', event => {
 function activateTopTab(id) {
   document.querySelectorAll('#topTabs .top-tab').forEach(el => el.classList.toggle('active', el.dataset.tab === id));
   document.querySelectorAll('.tab-panel').forEach(el => el.classList.toggle('active', el.id === 'tab-' + id));
-  if (id === 'magic') {
-    const activeSub = document.querySelector('#magicSubTabs .sub-tab.active');
-    if (activeSub) loadFrame(document.querySelector('#subpanel-' + activeSub.dataset.subtab + ' iframe'));
-    setHash(id, activeSub && activeSub.dataset.subtab);
-  } else {
-    loadFrame(document.querySelector('#tab-' + id + ' iframe'));
-    setHash(id);
-  }
+  loadFrame(document.querySelector('#tab-' + id + ' iframe'));
+  setHash(id);
 }
 
 document.querySelectorAll('#topTabs .top-tab').forEach(btn => {
   btn.addEventListener('click', () => activateTopTab(btn.dataset.tab));
 });
 
-// ---- Shareable deep links: #bf5, #vip, #magic, or #magic/housekeeping ----
-function setHash(top, sub) {
-  const next = '#' + top + (sub ? '/' + sub : '');
+// ---- Shareable deep links: #bf5, #vip, or #game ----
+function setHash(top) {
+  const next = '#' + top;
   if (location.hash !== next) history.replaceState(null, '', next);
 }
 
 function routeFromHash() {
-  const [top, sub] = location.hash.replace(/^#/, '').split('/');
-  if (top === 'magic') {
-    activateTopTab('magic');
-    if (sub && document.querySelector(`.sub-tab[data-subtab="${sub}"]`)) activateSubTab(sub);
-  } else if (top && document.querySelector(`#topTabs .top-tab[data-tab="${top}"]`)) {
+  const top = location.hash.replace(/^#/, '');
+  if (top && document.querySelector(`#topTabs .top-tab[data-tab="${top}"]`)) {
     activateTopTab(top);
   } else {
     activateTopTab('bf5');
