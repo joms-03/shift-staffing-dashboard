@@ -2,8 +2,8 @@ name: Refresh agent online status on Qwick dashboard
 
 on:
   schedule:
-    - cron: "*/15 * * * *"
-  workflow_dispatch: {}
+    - cron: "0 10,12 * * 1-5"
+      timezone: "America/New_York"
 
 permissions:
   contents: write
