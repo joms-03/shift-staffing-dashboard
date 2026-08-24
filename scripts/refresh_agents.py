@@ -350,7 +350,11 @@ def fetch_dtr_clockins(service, tab_title, today_est):
             in_col = i  # 'In' column; 'Out' is the next column over.
             break
     if in_col is None:
-        raise SystemExit(f"Could not find today's ({today_str}) column in DTR tab '{tab_title}'")
+        print(
+            f"Agent status unchanged: today's ({today_str}) column is not yet "
+            f"available in DTR tab '{tab_title}'"
+        )
+        return None
 
     name_col = 1
     schedule_col = 2
@@ -381,6 +385,8 @@ def main():
     service = get_dtr_service()
     tab_title, dtr_timezone = find_week_tab(service, today_est)
     clockins_by_name = fetch_dtr_clockins(service, tab_title, today_est)
+    if clockins_by_name is None:
+        return
 
     online = []
     for nickname, days in agents.items():

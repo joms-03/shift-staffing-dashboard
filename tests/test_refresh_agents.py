@@ -4,9 +4,56 @@ from zoneinfo import ZoneInfo
 
 from scripts.refresh_agents import (
     clock_in_is_late,
+    fetch_dtr_clockins,
     parse_clock_time,
     scheduled_start_from_dtr,
 )
+
+
+class FakeRequest:
+    def __init__(self, result):
+        self.result = result
+
+    def execute(self):
+        return self.result
+
+
+class FakeValues:
+    def __init__(self, result):
+        self.result = result
+
+    def get(self, **_kwargs):
+        return FakeRequest(self.result)
+
+
+class FakeSpreadsheets:
+    def __init__(self, result):
+        self.result = result
+
+    def values(self):
+        return FakeValues(self.result)
+
+
+class FakeService:
+    def __init__(self, result):
+        self.result = result
+
+    def spreadsheets(self):
+        return FakeSpreadsheets(self.result)
+
+
+class FetchDtrClockinsTests(unittest.TestCase):
+    def test_missing_today_column_skips_update_without_failing(self):
+        service = FakeService({
+            "values": [
+                ["", "", "8/24/26", "", "8/25/26", ""],
+                ["", "Agent", "Schedule"],
+            ]
+        })
+
+        result = fetch_dtr_clockins(service, "08/23 - 08/29", date(2026, 8, 23))
+
+        self.assertIsNone(result)
 
 
 class ParseClockTimeTests(unittest.TestCase):
