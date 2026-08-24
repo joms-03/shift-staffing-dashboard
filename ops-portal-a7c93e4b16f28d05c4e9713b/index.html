@@ -73,6 +73,20 @@
   .top-tab-link:first-of-type { margin-left: auto; }
   .top-tab-link:hover { background: #315f3d; }
 
+  .refresh-guide {
+    margin: 12px 28px 0;
+    padding: 11px 14px;
+    border: 1px solid #b8d3bf;
+    border-radius: 10px;
+    background: var(--green-bg);
+    color: #315f3d;
+    font-size: 12px;
+    line-height: 1.45;
+  }
+  .refresh-guide strong { color: var(--text); }
+  .refresh-guide .refresh-warning { font-weight: 800; }
+  .refresh-status { display: block; margin-top: 4px; color: var(--muted); }
+
   .tab-panel { display: none; }
   .tab-panel.active { display: block; }
 
@@ -175,9 +189,15 @@
   <button class="top-tab" data-tab="bf5">Business First 5</button>
   <button class="top-tab" data-tab="vip">VIP</button>
   <button class="top-tab" data-tab="game">Shift Rush Game</button>
-  <a class="top-tab-link" href="https://github.com/joms-03/shift-staffing-dashboard/actions/workflows/refresh.yml" target="_blank" rel="noopener" title="Open the manual refresh control in GitHub Actions">Refresh VIP + BF5 ↗</a>
+  <a class="top-tab-link" id="refreshDashboardLink" href="https://github.com/joms-03/shift-staffing-dashboard/actions/workflows/refresh.yml" target="_blank" rel="noopener" title="Open GitHub, then click Run workflow">Start VIP + BF5 refresh ↗</a>
   <a class="top-tab-link" href="../qwick-shift-rush.html" target="_blank" rel="noopener">Play Shift Rush ↗</a>
 </nav>
+
+<aside class="refresh-guide" aria-live="polite">
+  <strong>Manual refresh:</strong> GitHub will open in a new tab. Click <strong>Run workflow</strong> at the upper right, then click the green <strong>Run workflow</strong> button.
+  <span class="refresh-warning">Reloading the GitHub page does not start a refresh.</span>
+  <span class="refresh-status" id="refreshStatus">Checking the latest refresh…</span>
+</aside>
 
 <section class="tab-panel" id="tab-bf5">
   <iframe class="embed-frame" data-src="bf5.html" title="Business First 5 Shifts Dashboard"></iframe>
@@ -191,7 +211,7 @@
   <iframe class="embed-frame" data-src="../qwick-shift-rush.html" title="Qwick Shift Rush hospitality game"></iframe>
 </section>
 
-<footer class="hub-foot">VIP and BF5 refresh only when requested. Click <strong>Refresh VIP + BF5</strong>, choose <strong>Run workflow</strong> in GitHub, then reload this page after it finishes.</footer>
+<footer class="hub-foot">VIP and BF5 refresh only when requested. After the GitHub run finishes, reload this dashboard to see the new data.</footer>
 
 <script>
 // ---- Who's online: Pro Success / MOPS agents currently clocked in ----
@@ -225,6 +245,43 @@ function escapeHtml(s) {
     }
   }
 })();
+
+// ---- Manual VIP + BF5 refresh status ----
+const REFRESH_RUNS_API = 'https://api.github.com/repos/joms-03/shift-staffing-dashboard/actions/workflows/refresh.yml/runs?per_page=1';
+const refreshStatus = document.getElementById('refreshStatus');
+const refreshLink = document.getElementById('refreshDashboardLink');
+
+function formatRefreshRun(run) {
+  const when = new Date(run.updated_at || run.created_at);
+  const whenText = isNaN(when) ? '' : ' · ' + when.toLocaleString('en-US', {
+    month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short'
+  });
+  if (run.status !== 'completed') return 'Latest refresh: running now' + whenText;
+  if (run.conclusion === 'success') return 'Latest refresh: completed successfully' + whenText;
+  return 'Latest refresh: ' + (run.conclusion || 'finished') + whenText;
+}
+
+async function updateRefreshStatus() {
+  try {
+    const response = await fetch(REFRESH_RUNS_API, { headers: { Accept: 'application/vnd.github+json' } });
+    if (!response.ok) throw new Error('status unavailable');
+    const payload = await response.json();
+    const run = payload.workflow_runs && payload.workflow_runs[0];
+    refreshStatus.textContent = run ? formatRefreshRun(run) : 'No refresh run found yet.';
+  } catch (error) {
+    refreshStatus.textContent = 'Latest refresh status is available on the GitHub page.';
+  }
+}
+
+refreshLink.addEventListener('click', () => {
+  refreshStatus.textContent = 'GitHub opened—use its Run workflow button. Browser reload will not start it.';
+  let checks = 0;
+  const statusPoll = setInterval(() => {
+    updateRefreshStatus();
+    if (++checks >= 12) clearInterval(statusPoll);
+  }, 10000);
+});
+updateRefreshStatus();
 
 // ---- Lazy-load + auto-resize iframes so embedded pages don't get a nested scrollbar ----
 function loadFrame(iframe) {

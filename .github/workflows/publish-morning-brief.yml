@@ -5,6 +5,11 @@ on:
     branches: [main]
     paths:
       - "morning-brief/**"
+      - "ops-portal-a7c93e4b16f28d05c4e9713b/**"
+      - "assets/**"
+      - "index.html"
+      - "qwick-shift-rush.html"
+      - "robots.txt"
       - ".github/workflows/publish-morning-brief.yml"
   workflow_dispatch:
 
