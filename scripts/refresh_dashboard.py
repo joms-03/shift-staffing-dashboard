@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Pull the ops Google Sheets and regenerate the data arrays (and snapshot
-date) inside the non-root BF5 dashboard page:
+date) inside the non-root BF5 dashboard page and its compact summary feed:
 
 - SEC1/SEC2/SEC3: the 'Daily Shift Metrics' tab of the shift staffing sheet.
 - SHIFT_LINK_ROWS: exact location and shift IDs from the source import tab,
@@ -29,6 +29,7 @@ REVIEW_GID = "1635271142"
 CONFIRMED_GID = "226297878"
 RAW_SHIFT_GID = "165226170"
 PAYMENT_GID = "464653222"
+SUMMARY_PATH = "ops-portal-a7c93e4b16f28d05c4e9713b/bf5-unfilled-summary.json"
 
 HEADERS = {
     "SEC1": ("Business Name", "Date", "Skill", "Requested", "Confirmed", "Unfilled",
@@ -252,6 +253,15 @@ def to_js_array(rows):
     return json.dumps(rows, ensure_ascii=False)
 
 
+def summary_shift_rows(rows):
+    """Return only the public shift fields needed by the top-level counter."""
+    return [
+        [row[2], row[3], row[5], row[6]]
+        for row in rows
+        if row[2] is not None and row[3]
+    ]
+
+
 def main():
     shift_rows = fetch_rows(SHIFT_SHEET_ID, SHIFT_GID)
     sections = parse_sections(shift_rows)
@@ -303,13 +313,18 @@ def main():
     with open(index_path, "w", encoding="utf-8") as f:
         f.write(html)
 
+    summary_rows = summary_shift_rows(shift_link_rows)
+    with open(SUMMARY_PATH, "w", encoding="utf-8") as f:
+        json.dump({"snapshot_utc": snapshot_iso, "shifts": summary_rows}, f, ensure_ascii=False)
+        f.write("\n")
+
     print(f"Updated {index_path}: SEC1={len(sections['SEC1'])} rows, "
           f"SEC2={len(sections['SEC2'])} rows, SEC3={len(sections['SEC3'])} rows, "
           f"SHIFT_LINK_ROWS={len(shift_link_rows)} rows, "
           f"PAYMENT_ROWS={len(payment_rows)} rows, "
           f"REVIEW_ROWS={len(review_rows)} public-safe rows, "
           f"OUTREACH_ROWS={len(confirmed_rows)} public-safe rows, "
-          f"snapshot={snapshot}")
+          f"SUMMARY_ROWS={len(summary_rows)} rows, snapshot={snapshot}")
 
 
 if __name__ == "__main__":

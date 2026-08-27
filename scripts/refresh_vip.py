@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Pull the VIP shift and qualification-risk outreach sheets and regenerate
 the SHIFT_ROWS and OUTREACH_ROWS arrays (and snapshot date) inside
-the non-root VIP dashboard page.
+the non-root VIP dashboard page and its compact summary feed.
 
 Sources:
 - 'VIP' sheet (Redshift import) — one row per upcoming shift at a VIP
@@ -32,6 +32,7 @@ OUTREACH_SHEET_ID = "1Ry1cozuvFYRYPv8dg449WaC2mDykAtScb1R1JLmGbjM"
 OUTREACH_GID = "599864705"
 OUTREACH_NOTES_SHEET_ID = "1k5oRyKF4RfMs9pvB7WVGLICKM6R-4MI10ZbTvk76PPw"
 OUTREACH_NOTES_GID = "930242576"
+SUMMARY_PATH = "ops-portal-a7c93e4b16f28d05c4e9713b/vip-unfilled-summary.json"
 
 SHIFT_COLUMNS = [
     "shift_id", "start_datetime", "market", "location_name", "shift_type",
@@ -122,6 +123,15 @@ def to_onoff(value):
 def clean(value):
     value = (value or "").strip()
     return value or None
+
+
+def summary_shift_rows(rows):
+    """Return only the public shift fields needed by the top-level counter."""
+    return [
+        [row[0], row[1], row[6], row[7]]
+        for row in rows
+        if row[0] is not None and row[1]
+    ]
 
 
 def parse_shift_rows(raw_rows):
@@ -244,8 +254,14 @@ def main():
     with open(html_path, "w", encoding="utf-8") as f:
         f.write(html)
 
+    summary_rows = summary_shift_rows(shift_rows)
+    with open(SUMMARY_PATH, "w", encoding="utf-8") as f:
+        json.dump({"snapshot_utc": snapshot_iso, "shifts": summary_rows}, f, ensure_ascii=False)
+        f.write("\n")
+
     print(f"Updated {html_path}: SHIFT_ROWS={len(shift_rows)} rows, "
-          f"OUTREACH_ROWS={len(outreach_rows)} rows, snapshot={snapshot}")
+          f"OUTREACH_ROWS={len(outreach_rows)} rows, "
+          f"SUMMARY_ROWS={len(summary_rows)} rows, snapshot={snapshot}")
 
 
 if __name__ == "__main__":

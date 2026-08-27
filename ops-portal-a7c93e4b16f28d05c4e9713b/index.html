@@ -13,6 +13,7 @@
 <title>Qwick Magic Team Dashboard</title>
 <link rel="stylesheet" href="../assets/dashboard-interactions.css">
 <script defer src="../assets/dashboard-interactions.js"></script>
+<script defer src="../assets/unfilled-summary.js"></script>
 <style>
   :root {
     color-scheme: light;
@@ -86,6 +87,39 @@
   .refresh-guide strong { color: var(--text); }
   .refresh-guide .refresh-warning { font-weight: 800; }
   .refresh-status { display: block; margin-top: 4px; color: var(--muted); }
+
+  .unfilled-summary {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(220px, 1fr));
+    gap: 10px;
+    margin: 14px 28px 0;
+  }
+  .unfilled-counter {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 54px;
+    padding: 11px 15px;
+    border: 1px solid #b8d3bf;
+    border-radius: 10px;
+    background: var(--green-bg);
+    color: #315f3d;
+    font-size: 13px;
+    font-weight: 750;
+  }
+  .unfilled-counter.attention {
+    border-color: #e1a273;
+    background: #fff1e6;
+    color: #9c3f19;
+    box-shadow: 0 2px 8px rgba(156, 63, 25, .1);
+  }
+  .unfilled-counter.load-error { color: var(--muted); background: var(--gray-bg); border-color: var(--border); }
+  .unfilled-counter-value { font-size: 23px; line-height: 1; font-weight: 850; font-variant-numeric: tabular-nums; }
+  @media (max-width: 620px) {
+    .unfilled-summary { grid-template-columns: 1fr; margin-inline: 16px; }
+    .unfilled-counter { min-height: 48px; }
+  }
 
   .tab-panel { display: none; }
   .tab-panel.active { display: block; }
@@ -184,6 +218,17 @@
   <div class="agent-chip-row" id="agentChipRow"></div>
   <span class="agent-status-snapshot" id="agentSnapshot" data-snapshot-utc="2026-08-26T16:40:59Z"></span>
 </div>
+
+<section class="unfilled-summary" aria-label="Unfilled shifts in the next 3 days">
+  <div class="unfilled-counter" id="bf5UnfilledCounter" data-summary-src="bf5-unfilled-summary.json">
+    <span>BF5 Unfilled (Next 3 Days):</span>
+    <strong class="unfilled-counter-value" aria-live="polite">&mdash;</strong>
+  </div>
+  <div class="unfilled-counter" id="vipUnfilledCounter" data-summary-src="vip-unfilled-summary.json">
+    <span>VIP Unfilled (Next 3 Days):</span>
+    <strong class="unfilled-counter-value" aria-live="polite">&mdash;</strong>
+  </div>
+</section>
 
 <nav class="top-tabs" id="topTabs">
   <button class="top-tab" data-tab="bf5">Business First 5</button>
