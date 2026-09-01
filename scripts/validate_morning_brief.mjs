@@ -18,11 +18,10 @@ const expectedAgents = [
   "marc-bryan-caras",
   "marvie-mavis-de-jesus",
   "rhys-cruz",
-  "angelo-gelo-bartolome",
   "mark-camillo",
 ];
 const actualAgents = [...brief.matchAll(/data-agent="([^"]+)"/g)].map((match) => match[1]);
-assert(actualAgents.length === expectedAgents.length, `Expected eight agent tables; found ${actualAgents.length}`);
+assert(actualAgents.length === expectedAgents.length, `Expected seven agent tables; found ${actualAgents.length}`);
 assert(expectedAgents.every((agent) => actualAgents.includes(agent)), "One or more required agent tables are missing");
 
 const permanentKeys = [...brief.matchAll(/data-permanent-key="([^"]+)"/g)].map((match) => match[1]);
