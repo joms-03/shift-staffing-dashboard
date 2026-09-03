@@ -23,6 +23,8 @@ import csv
 import io
 import json
 import re
+import time
+import urllib.error
 import urllib.request
 from datetime import datetime, timedelta, timezone
 
@@ -33,6 +35,9 @@ OUTREACH_GID = "599864705"
 OUTREACH_NOTES_SHEET_ID = "1k5oRyKF4RfMs9pvB7WVGLICKM6R-4MI10ZbTvk76PPw"
 OUTREACH_NOTES_GID = "930242576"
 SUMMARY_PATH = "ops-portal-a7c93e4b16f28d05c4e9713b/vip-unfilled-summary.json"
+FETCH_ATTEMPTS = 3
+FETCH_TIMEOUT_SECONDS = 30
+FETCH_RETRY_DELAY_SECONDS = 2
 
 SHIFT_COLUMNS = [
     "shift_id", "start_datetime", "market", "location_name", "shift_type",
@@ -64,9 +69,20 @@ def csv_url(sheet_id, gid):
 
 def fetch_rows(sheet_id, gid):
     req = urllib.request.Request(csv_url(sheet_id, gid), headers={"User-Agent": "Mozilla/5.0"})
-    with urllib.request.urlopen(req, timeout=30) as resp:
-        text = resp.read().decode("utf-8")
-    return list(csv.reader(io.StringIO(text)))
+    for attempt in range(1, FETCH_ATTEMPTS + 1):
+        try:
+            with urllib.request.urlopen(req, timeout=FETCH_TIMEOUT_SECONDS) as resp:
+                text = resp.read().decode("utf-8")
+            return list(csv.reader(io.StringIO(text)))
+        except (TimeoutError, ConnectionError, urllib.error.URLError) as exc:
+            if attempt == FETCH_ATTEMPTS:
+                raise
+            delay = FETCH_RETRY_DELAY_SECONDS * attempt
+            print(
+                f"Google Sheets download failed (attempt {attempt}/{FETCH_ATTEMPTS}): "
+                f"{exc}. Retrying in {delay}s..."
+            )
+            time.sleep(delay)
 
 
 def normalize_datetime(value):
