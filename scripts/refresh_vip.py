@@ -12,7 +12,8 @@ Sources:
   rule: both qualification signals are missing, or the assigned-position
   rating is below 4.0.
 - 'VIP Outreach' sheet ('Notes' tab) — outreach notes and assigned agent,
-joined back to the raw qualification-risk rows by row_key.
+  read privately through the dashboard service account and joined back to the
+  raw qualification-risk rows by row_key.
 
 The source phone field is intentionally blanked before publishing. GitHub
 Pages is public, and the page's visual password prompt does not protect its
@@ -22,6 +23,7 @@ source from direct access.
 import csv
 import io
 import json
+import os
 import re
 import time
 import urllib.error
@@ -83,6 +85,28 @@ def fetch_rows(sheet_id, gid):
                 f"{exc}. Retrying in {delay}s..."
             )
             time.sleep(delay)
+
+
+def get_private_sheet_service():
+    from google.oauth2 import service_account
+    from googleapiclient.discovery import build
+
+    key_path = os.environ["VIP_SERVICE_ACCOUNT_KEY_PATH"]
+    credentials = service_account.Credentials.from_service_account_file(
+        key_path,
+        scopes=["https://www.googleapis.com/auth/spreadsheets.readonly"],
+    )
+    return build("sheets", "v4", credentials=credentials, cache_discovery=False)
+
+
+def fetch_private_rows(sheet_id, range_name):
+    service = get_private_sheet_service()
+    result = service.spreadsheets().values().get(
+        spreadsheetId=sheet_id,
+        range=range_name,
+        valueRenderOption="FORMATTED_VALUE",
+    ).execute(num_retries=2)
+    return result.get("values", [])
 
 
 def normalize_datetime(value):
@@ -238,7 +262,7 @@ def main():
     if not shift_rows:
         raise SystemExit("Refusing to update: VIP shift sheet came back empty")
 
-    notes_by_key = parse_notes(fetch_rows(OUTREACH_NOTES_SHEET_ID, OUTREACH_NOTES_GID))
+    notes_by_key = parse_notes(fetch_private_rows(OUTREACH_NOTES_SHEET_ID, "'Notes'!A:Z"))
     outreach_rows = parse_outreach_rows(
         fetch_rows(OUTREACH_SHEET_ID, OUTREACH_GID),
         notes_by_key,

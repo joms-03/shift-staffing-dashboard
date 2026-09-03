@@ -30,5 +30,24 @@ class FetchRowsTests(unittest.TestCase):
         self.assertEqual(refresh_vip.FETCH_ATTEMPTS - 1, mock_sleep.call_count)
 
 
+class FetchPrivateRowsTests(unittest.TestCase):
+    @patch("scripts.refresh_vip.get_private_sheet_service")
+    def test_reads_formatted_values_through_the_sheets_api(self, mock_service_factory):
+        service = MagicMock()
+        request = service.spreadsheets.return_value.values.return_value.get.return_value
+        request.execute.return_value = {"values": [["row_key", "notes"], ["1", "Done"]]}
+        mock_service_factory.return_value = service
+
+        rows = refresh_vip.fetch_private_rows("sheet-id", "'Notes'!A:Z")
+
+        self.assertEqual([["row_key", "notes"], ["1", "Done"]], rows)
+        service.spreadsheets.return_value.values.return_value.get.assert_called_once_with(
+            spreadsheetId="sheet-id",
+            range="'Notes'!A:Z",
+            valueRenderOption="FORMATTED_VALUE",
+        )
+        request.execute.assert_called_once_with(num_retries=2)
+
+
 if __name__ == "__main__":
     unittest.main()
